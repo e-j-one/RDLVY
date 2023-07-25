@@ -1,5 +1,5 @@
 import gym
-from .warehouse import Warehouse, RewardType, Action, ObserationType
+from .customwarehouse import CustomWarehouse, RewardType, Action, ObserationType
 import itertools
 
 _sizes = {
@@ -17,7 +17,7 @@ for size, diff, agents in _perms:
     # normal tasks
     gym.register(
         id=f"rware-{size}-{agents}ag{diff}-v1",
-        entry_point="rware.warehouse:Warehouse",
+        entry_point="rware.customwarehouse:CustomWarehouse",
         kwargs={
             "column_height": 8,
             "shelf_rows": _sizes[size][0],
@@ -46,7 +46,7 @@ def image_registration():
             continue
         gym.register(
             id=f"rware{obs_type}{directional}-{size}-{agents}ag{diff}-v1",
-            entry_point="rware.warehouse:Warehouse",
+            entry_point="rware.customwarehouse:CustomWarehouse",
             kwargs={
                 "column_height": 8,
                 "shelf_rows": _sizes[size][0],
@@ -77,7 +77,7 @@ def full_registration():
             continue
         gym.register(
             id=f"rware{obs_type}{directional}{sensor_range}-{size}-{column_height}h-{agents}ag{diff}-v1",
-            entry_point="rware.warehouse:Warehouse",
+            entry_point="rware.customwarehouse:CustomWarehouse",
             kwargs={
                 "column_height": column_height,
                 "shelf_rows": _sizes[size][0],
@@ -115,7 +115,7 @@ def full_registration():
     for rows, cols, column_height, agents, req, rew, obs_type, sensor_range, directional in _perms:
         gym.register(
             id=f"rware{obs_type}{directional}{sensor_range}-{rows}x{cols}-{column_height}h-{agents}ag-{req}req-{rew}-v1",
-            entry_point="rware.warehouse:Warehouse",
+            entry_point="rware.customwarehouse:CustomWarehouse",
             kwargs={
                 "column_height": column_height,
                 "shelf_rows": rows,
