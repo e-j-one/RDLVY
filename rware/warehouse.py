@@ -48,6 +48,11 @@ class Action(Enum):
     TOGGLE_LOAD = 4
 
 
+class Line(Enum):
+    LEFT = 0
+    RIGHT = 1
+
+
 class Direction(Enum):
     UP = 0
     DOWN = 1
@@ -131,7 +136,7 @@ class Container:
 class Agent(Entity):
     counter = 0
 
-    def __init__(self, x: int, y: int, dir_: Direction, msg_bits: int):
+    def __init__(self, x: int, y: int, dir_: Direction, line_: Line, msg_bits: int):
         Agent.counter += 1
         super().__init__(Agent.counter, x, y)
         self.dir = dir_
@@ -140,6 +145,7 @@ class Agent(Entity):
         self.carrying_shelf: Optional[Shelf] = None
         self.canceled_action = None
         self.has_delivered = False
+        self.line = line_
 
         self.container = Container()
 
@@ -489,6 +495,7 @@ class Warehouse(gym.Env):
                                             "location": location_space,
                                             "carrying_shelf": spaces.MultiDiscrete([2]), # Now works as carrying_package # TODO: change name
                                             "direction": spaces.Discrete(4),
+                                            "line": spaces.Discrete(2),
                                             "on_highway": spaces.MultiBinary(1), # Should always be true
                                         }
                                     )
@@ -501,6 +508,7 @@ class Warehouse(gym.Env):
                                                 {
                                                     "has_agent": spaces.MultiBinary(1),
                                                     "direction": spaces.Discrete(4),
+                                                    "line": spaces.Discrete(2),
                                                     "local_message": spaces.MultiBinary(
                                                         self.msg_bits
                                                     ),
@@ -674,6 +682,9 @@ class Warehouse(gym.Env):
             direction = np.zeros(4)
             direction[agent.dir.value] = 1.0
             obs.write(direction)
+            line = np.zeros(2)
+            line[agent.line.value] = 1.0
+            obs.write(line)
             obs.write([int(self._is_highway(agent.x, agent.y))])
 
             for i, (id_agent, id_shelf, num_requested_packages) in enumerate(zip(agents, shelfs, requested_packages)):
@@ -685,6 +696,8 @@ class Warehouse(gym.Env):
                     obs.write([1.0])
                     direction = np.zeros(4)
                     direction[self.agents[id_agent - 1].dir.value] = 1.0
+                    line = np.zeros(2)
+                    line[self.agents[id_agent - 1].line.value] = 1.0
                     obs.write(direction)
                     if self.msg_bits > 0:
                         obs.write(self.agents[id_agent - 1].message)
@@ -716,6 +729,7 @@ class Warehouse(gym.Env):
             # "carrying_shelf": [int(agent.carrying_shelf is not None)],
             "carrying_shelf": [int(agent.carrying_package() is not None)], 
             "direction": agent.dir.value,
+            "line": agent.line.value,
             "on_highway": [int(self._is_highway(agent.x, agent.y))],
         }
         # --- sensor data
@@ -730,6 +744,7 @@ class Warehouse(gym.Env):
             else:
                 obs["sensors"][i]["has_agent"] = [1]
                 obs["sensors"][i]["direction"] = self.agents[id_ - 1].dir.value
+                obs["sensors"][i]["line"] = self.agents[id_ - 1].line.value
                 obs["sensors"][i]["local_message"] = self.agents[id_ - 1].message # TODO: change messages
 
         # find neighboring shelfs:
@@ -818,9 +833,13 @@ class Warehouse(gym.Env):
         
         # and direction
         agent_dirs = np.random.choice([d for d in Direction], size=self.n_agents)
+
+        # and line info
+        agent_lines = np.random.choice([l for l in Line], size=self.n_agents)
+        
         self.agents = [
-            Agent(x, y, dir_, self.msg_bits)
-            for y, x, dir_ in zip(*agent_locs, agent_dirs)
+            Agent(x, y, dir_, line_, self.msg_bits)
+            for y, x, dir_, line_ in zip(*agent_locs, agent_dirs, agent_lines)
         ]
 
         self._recalc_grid()
