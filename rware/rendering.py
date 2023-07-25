@@ -365,14 +365,16 @@ class Viewer(object):
                 verts += [x, y]
             circle = pyglet.graphics.vertex_list(resolution, ("v2f", verts))
 
-            if agent.carrying_package() == 3:
+            if not agent.carrying_package():
+                draw_color = _AGENT_COLOR
+            elif agent.container.count_packages() == 3:
                 draw_color = _AGENT_WITH_PACKAGE_3
-            elif agent.carrying_package() == 2:
+            elif agent.container.count_packages() == 2:
                 draw_color = _AGENT_WITH_PACKAGE_2
-            elif agent.carrying_package() == 1:
+            elif agent.container.count_packages() == 1:
                 draw_color = _AGENT_WITH_PACKAGE_1
             else:
-                draw_color = _AGENT_COLOR
+                draw_color = _BLACK
 
             glColor3ub(*draw_color)
             circle.draw(GL_POLYGON)

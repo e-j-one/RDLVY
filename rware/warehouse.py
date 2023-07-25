@@ -848,7 +848,7 @@ class Warehouse(gym.Env):
                 break
         _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
         _new_goal = random.choice(_unselected_goals)
-        self.goal_candidates.append(_new_goal)
+        self.requested_goals.append(_new_goal)
 
     def step(
         self, actions: List[Action]
@@ -1058,8 +1058,10 @@ class Warehouse(gym.Env):
     
 
 if __name__ == "__main__":
-    from layout import layout_bongcheonstreet
-    env = Warehouse(9, 8, 3, 30, 3, 1, 5, None, None, RewardType.GLOBAL, layout=layout_bongcheonstreet)
+    # from layout import layout_301
+    # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
+    from layout import layout_smallstreet
+    env = Warehouse(9, 8, 3, 30, 3, 1, 10, None, None, RewardType.GLOBAL, layout=layout_smallstreet)
     env.reset()
     import time
     from tqdm import tqdm
