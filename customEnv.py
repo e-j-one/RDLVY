@@ -10,3 +10,5 @@ if __name__=="__main__":
     obs = env.reset()
     while True:
         env.render()
+        actions = env.action_space.sample()
+        env.step(actions)
