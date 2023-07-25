@@ -894,9 +894,18 @@ class Warehouse(gym.Env):
         # forward_agents = [agent for agent in self.agents if agent.action == Action.FORWARD]
         commited_agents = set()
 
-        G = nx.DiGraph()
+        agents_in_left = [agent for agent in self.agents if agent.line==Line.LEFT]
+        agents_in_right = [agent for agent in self.agents if agent.line==Line.RIGHT]
+        assert len(agents_in_left+agents_in_right) == len(self.agents)
 
-        for agent in self.agents:
+        G_leftline = nx.DiGraph()
+        G_rightline = nx.DiGraph()
+
+        for agent in agents_in_left:
+            start = 
+        
+
+        for agent in agents_in_left:
             start = agent.x, agent.y
             target = agent.req_location(self.grid_size)
 
@@ -915,7 +924,7 @@ class Warehouse(gym.Env):
                 # our agent is carrying a shelf so there's no way
                 # this movement can succeed. Cancel it.
                 agent.req_action = Action.NOOP
-                G.add_edge(start, start)
+                G_leftline.add_edge(start, start)
             elif (
                 not self._is_highway(target[0], target[1])
             ):
@@ -926,7 +935,7 @@ class Warehouse(gym.Env):
             else:
                 G.add_edge(start, target)
 
-        wcomps = [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
+        wcomps_left = [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
 
         for comp in wcomps:
             try:
