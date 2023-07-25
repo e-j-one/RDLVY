@@ -745,7 +745,6 @@ class CustomWarehouse(gym.Env):
                 possible_locs.append((x, y))
             else:
                 if self._is_near_highway(x, y):
-                    possible_locs.append((x, y))
                     target_shelfs_idx.append(1)
                 else:
                     target_shelfs_idx.append(0)
