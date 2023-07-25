@@ -67,3 +67,10 @@ xxxxxxx.xx.xxxxxxxxxxx.xxxxxxxxxxxxxg.xxxx.xxxx.gxxxxxxxxxg.xxxx
 xxxxxxx....xxxxxxxxxxx.gxggxgxgxgxgxg.gxxx.xxxx.xgxgxggxgxg.xxxx
 xxxxxxxxx...................................................xxxx
 """
+
+layout_bongcheonstreet = """
+xxxxxxgxgxgxgxgxgxgxgxgxgxgxgxgxgxgxgxgxgxgxxxxxxxxxxxxxxxxxxxxx
+xxx..........................................................xxx
+xxx..........................................................xxx
+xxxxsxsxsxsxsxsxsxsxsxsxxxxxxxxxxsxsxsxsxsxsxsxsxsxsxxxxxxxxxxxx
+"""

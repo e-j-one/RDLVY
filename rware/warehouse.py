@@ -95,6 +95,10 @@ class Package(Entity):
         Package.counter += 1
         super().__init__(Package.counter, x, y)
 
+    def move(self, x, y):
+        self.x = x
+        self.y = y
+
 class Container:
     def __init__(self):
         self._num_packages = 0
@@ -119,6 +123,10 @@ class Container:
             return True
         else:
             return None
+    
+    def move_package(self, x, y):
+        for package in self.packages:
+            package.move(x,y)
 
 class Agent(Entity):
     counter = 0
@@ -171,6 +179,10 @@ class Agent(Entity):
             return wraplist[(wraplist.index(self.dir) - 1) % len(wraplist)]
         else:
             return self.dir
+    
+    def move_container(self):
+        # drag container to agent's location
+        self.container.move_package(self.x, self.y)
 
 
 class Shelf(Entity):
@@ -211,6 +223,7 @@ class Warehouse(gym.Env):
         ],
         image_observation_directional: bool=True,
         normalised_coordinates: bool=False,
+        package_carrying_capacity_per_agent: int = 3
     ):
         """The robotic warehouse environment
 
@@ -295,6 +308,7 @@ class Warehouse(gym.Env):
             self._make_layout_from_str(layout)
 
         self.n_agents = n_agents
+        self.package_carrying_capacity_per_agent = package_carrying_capacity_per_agent
         self.msg_bits = msg_bits
         self.sensor_range = sensor_range
         self.max_inactivity_steps: Optional[int] = max_inactivity_steps
@@ -758,7 +772,13 @@ class Warehouse(gym.Env):
             _package = Package(_random_start_pos[0], _random_start_pos[1])
             _new_package_orders.append(_package)
         return _new_package_orders
-
+    
+    def _create_new_package(self):
+        _random_start_pos = random.choice(self.start_candidates)
+        self.starts_with_package_grid[_random_start_pos[1], _random_start_pos[0]] += 1
+        _package = Package(_random_start_pos[0], _random_start_pos[1])
+        return _package
+    
     def reset(self):
         Shelf.counter = 0
         Agent.counter = 0
@@ -806,6 +826,29 @@ class Warehouse(gym.Env):
         # for s in self.shelfs:
         #     self.grid[0, s.y, s.x] = 1
         # print(self.grid[0])
+
+    def _is_start_pose_with_package(self, x, y):
+        if self.requested_package_grid[y,x] > 0:
+            return True
+        else:
+            return False
+
+    def _load_package_from_stat_pose(self, x, y):
+        for i, package in enumerate(self.request_queue):
+            if package.x == x and package.y == y:
+                del self.request_queue[i]
+                self.starts_with_package_grid[y, x] -= 1
+                return package
+        raise ValueError(f'No package found at location ({x}, {y})')
+
+    def _replace_goal(self, x, y):
+        for i, goal_pose in enumerate(self.requested_goals):
+            if goal_pose[0] == x and goal_pose[1] == y:
+                del self.requested_goals[i]
+                break
+        _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
+        _new_goal = random.choice(_unselected_goals)
+        self.goal_candidates.append(_new_goal)
 
     def step(
         self, actions: List[Action]
@@ -895,41 +938,80 @@ class Warehouse(gym.Env):
             agent.prev_x, agent.prev_y = agent.x, agent.y
 
             if agent.req_action == Action.FORWARD:
-                agent.x, agent.y = agent.req_location(self.grid_size)
-                if agent.carrying_shelf:
-                    agent.carrying_shelf.x, agent.carrying_shelf.y = agent.x, agent.y
+                agent.x, agent.y = agent.req_location(self.grid_size) # TODO: move agent by method 
+                # if agent.carrying_shelf:
+                #     agent.carrying_shelf.x, agent.carrying_shelf.y = agent.x, agent.y
+                if agent.carrying_package():
+                    agent.move_container() # This method could be inside agent's 'move' method 
             elif agent.req_action in [Action.LEFT, Action.RIGHT]:
                 agent.dir = agent.req_direction()
-            elif agent.req_action == Action.TOGGLE_LOAD and not agent.carrying_shelf:
-                shelf_id = self.grid[_LAYER_SHELFS, agent.y, agent.x]
-                if shelf_id:
-                    agent.carrying_shelf = self.shelfs[shelf_id - 1]
-            elif agent.req_action == Action.TOGGLE_LOAD and agent.carrying_shelf:
-                if not self._is_highway(agent.x, agent.y):
-                    agent.carrying_shelf = None
-                    if agent.has_delivered and self.reward_type == RewardType.TWO_STAGE:
-                        rewards[agent.id - 1] += 0.5
+            # elif agent.req_action == Action.TOGGLE_LOAD and not agent.carrying_shelf:
+            #     shelf_id = self.grid[_LAYER_SHELFS, agent.y, agent.x]
+            #     if shelf_id:
+            #         agent.carrying_shelf = self.shelfs[shelf_id - 1]
+            elif (
+                agent.req_action == Action.TOGGLE_LOAD and
+                agent.container.count_packages() < self.package_carrying_capacity_per_agent and
+                self._is_start_pose_with_package(agent.x, agent.y)
+                ):
+                # implement loading
+                # if agent is in start position with requested package, load package
+                loaded_package = self._load_package_from_stat_pose(agent.x, agent.y)
+                agent.container.load(loaded_package)
+            # deprecate shelf returning            
+            # elif agent.req_action == Action.TOGGLE_LOAD and agent.carrying_shelf:
+            #     if not self._is_highway(agent.x, agent.y):
+            #         agent.carrying_shelf = None
+            #         if agent.has_delivered and self.reward_type == RewardType.TWO_STAGE:
+            #             rewards[agent.id - 1] += 0.5
+            #         agent.has_delivered = False
 
-                    agent.has_delivered = False
 
         self._recalc_grid()
 
-        shelf_delivered = False
-        for y, x in self.goals:
-            shelf_id = self.grid[_LAYER_SHELFS, x, y]
-            if not shelf_id:
-                continue
-            shelf = self.shelfs[shelf_id - 1]
+        # shelf_delivered = False
+        package_delivered = False
+        # for y, x in self.goals:
+        for y, x in self.requested_goals:
+            # shelf_id = self.grid[_LAYER_SHELFS, x, y]
+            # if not shelf_id:
+            #     continue
+            # shelf = self.shelfs[shelf_id - 1]
 
-            if shelf not in self.request_queue:
+            # TODO: maybe change gridmap[_LAYER_AGENT] to incorporate multiple agent at same sell
+            # NOTE: assume grid[_LAYER_AGENTS] represents one of agent id at the same cell
+            # only one agent can occupy goal_pose
+            agent_id =self.grid[_LAYER_AGENTS, x, y]
+            if not agent_id:
                 continue
+            agent = self.agents[agent_id -1]
+
+
+            # if shelf not in self.request_queue:
+            #     continue
             # a shelf was successfully delived.
-            shelf_delivered = True
+            # shelf_delivered = True
+            if not agent.carrying_package():
+                continue
+            # a package was successfully delilved.
+            package_delivered = True
+
             # remove from queue and replace it
-            new_request = np.random.choice(
-                list(set(self.shelfs) - set(self.request_queue))
-            )
-            self.request_queue[self.request_queue.index(shelf)] = new_request
+            # new_request = np.random.choice(
+            #     list(set(self.shelfs) - set(self.request_queue))
+            # )
+            # self.request_queue[self.request_queue.index(shelf)] = new_request
+
+            # package is removed from request_queue when it was loaded from the start
+            # unload package from container inside agent
+            # add new package to request_queue
+            new_package = self._create_new_package()
+            self.request_queue.append(new_package)
+            agent.container.unload()
+            # delete goal and create new one
+            self._replace_goal(y, x)
+
+
             # also reward the agents
             if self.reward_type == RewardType.GLOBAL:
                 rewards += 1
@@ -941,7 +1023,8 @@ class Warehouse(gym.Env):
                 self.agents[agent_id - 1].has_delivered = True
                 rewards[agent_id - 1] += 0.5
 
-        if shelf_delivered:
+        # if shelf_delivered:
+        if package_delivered:
             self._cur_inactive_steps = 0
         else:
             self._cur_inactive_steps += 1
@@ -975,14 +1058,14 @@ class Warehouse(gym.Env):
     
 
 if __name__ == "__main__":
-    from layout import layout_smallstreet
-    env = Warehouse(9, 8, 3, 30, 3, 1, 5, None, None, RewardType.GLOBAL, layout=layout_smallstreet)
+    from layout import layout_bongcheonstreet
+    env = Warehouse(9, 8, 3, 30, 3, 1, 5, None, None, RewardType.GLOBAL, layout=layout_bongcheonstreet)
     env.reset()
     import time
     from tqdm import tqdm
 
     env.render()
-    time.sleep(10)
+    time.sleep(2)
     # env.step(18 * [Action.LOAD] + 2 * [Action.NOOP])
 
     for _ in tqdm(range(1000000)):
