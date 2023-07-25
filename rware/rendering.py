@@ -64,7 +64,14 @@ _AGENT_LOADED_COLOR = _RED
 _AGENT_DIR_COLOR = _BLACK
 _GOAL_COLOR = (60, 60, 60)
 
+_START_CANDIDATE_COLOR = (100, 0, 0)
+# _PACKAGE_COLOR = _DARKSLATEBLUE
+# _PACKAGE_REQ_COLOR = _TEAL
+
+_START_CAND_PADDING = 1
 _SHELF_PADDING = 2
+_PACKAGE_PADDING = 2
+
 
 
 def get_display(spec):
@@ -128,6 +135,9 @@ class Viewer(object):
         self._draw_goals(env)
         self._draw_shelfs(env)
         self._draw_agents(env)
+        self._draw_start_candidates(env)
+        # self._draw_goal_candidates(env)
+        # self._draw_packages(env)
 
         if return_rgb_array:
             buffer = pyglet.image.get_buffer_manager().get_color_buffer()
@@ -232,6 +242,33 @@ class Viewer(object):
                     ),
                 ),
                 ("c3B", 4 * _GOAL_COLOR),
+            )
+        batch.draw()
+    
+    def _draw_start_candidates(self, env):
+        batch = pyglet.graphics.Batch()
+
+        for start_candidate in env.start_candidates:
+            x, y = start_candidate
+            y = self.rows - y - 1  # pyglet rendering is reversed
+            batch.add(
+                4,
+                gl.GL_QUADS,
+                None,
+                (
+                    "v2f",
+                    (
+                        (self.grid_size + 1) * x + _START_CAND_PADDING + 1,  # TL - X
+                        (self.grid_size + 1) * y + _START_CAND_PADDING + 1,  # TL - Y
+                        (self.grid_size + 1) * (x + 1) - _START_CAND_PADDING,  # TR - X
+                        (self.grid_size + 1) * y + _START_CAND_PADDING + 1,  # TR - Y
+                        (self.grid_size + 1) * (x + 1) - _START_CAND_PADDING,  # BR - X
+                        (self.grid_size + 1) * (y + 1) - _START_CAND_PADDING,  # BR - Y
+                        (self.grid_size + 1) * x + _START_CAND_PADDING + 1,  # BL - X
+                        (self.grid_size + 1) * (y + 1) - _START_CAND_PADDING,  # BL - Y
+                    ),
+                ),
+                ("c3B", 4 * _START_CANDIDATE_COLOR),
             )
         batch.draw()
 
