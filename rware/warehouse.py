@@ -5,7 +5,7 @@ import gym
 from gym import spaces
 
 from rware.utils import MultiAgentActionSpace, MultiAgentObservationSpace
-from rware.utils.rdlvy_utils import select_hightway_positions
+from rware.utils.rdlvy_utils import select_highway_positions
 
 from enum import Enum
 import numpy as np
@@ -798,6 +798,15 @@ class Warehouse(gym.Env):
             if not self._is_highway(x, y)
         ]
 
+        # self.request_queue = list(
+        #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
+        # )
+        self.request_queue = self._create_packages()
+        self.requested_goals = random.sample(self.goal_candidates, self.requested_goal_size)
+        _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
+        for _u_goals in _unselected_goals:
+            self.highways[_u_goals[1], _u_goals[0]] = 0
+
         # spawn agents at random locations
         # agent_locs = np.random.choice(
         #     np.arange(self.grid_size[0] * self.grid_size[1]),
@@ -805,7 +814,7 @@ class Warehouse(gym.Env):
         #     replace=False,
         # )
         # agent_locs = np.unravel_index(agent_locs, self.grid_size)
-        agent_locs = select_hightway_positions(self.highways, self.n_agents)
+        agent_locs = select_highway_positions(self.highways, self.n_agents)
         
         # and direction
         agent_dirs = np.random.choice([d for d in Direction], size=self.n_agents)
@@ -815,13 +824,7 @@ class Warehouse(gym.Env):
         ]
 
         self._recalc_grid()
-
-        # self.request_queue = list(
-        #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
-        # )
-        self.request_queue = self._create_packages()
-        self.requested_goals = random.sample(self.goal_candidates, self.requested_goal_size)
-
+        
         return tuple([self._make_obs(agent) for agent in self.agents])
         # for s in self.shelfs:
         #     self.grid[0, s.y, s.x] = 1
@@ -844,10 +847,13 @@ class Warehouse(gym.Env):
     def _replace_goal(self, x, y):
         for i, goal_pose in enumerate(self.requested_goals):
             if goal_pose[0] == x and goal_pose[1] == y:
+                self.highways[y, x] = 0
                 del self.requested_goals[i]
                 break
+        
         _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
         _new_goal = random.choice(_unselected_goals)
+        self.highways[_new_goal[1], _new_goal[0]] = 1
         self.requested_goals.append(_new_goal)
 
     def step(
