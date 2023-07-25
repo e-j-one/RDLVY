@@ -24,7 +24,6 @@ _COLLISION_LAYERS = 2
 
 _LAYER_AGENTS = 0
 _LAYER_SHELFS = 1
-_LAYER_REQUESTED_PACKAGES = 2
 
 
 class _VectorWriter:
@@ -399,7 +398,7 @@ class Warehouse(gym.Env):
                     self.start_candidates.append((x,y))
                     self.highways[y, x] = 1
 
-        assert len(self.goals) >= 1, "At least one goal is required"
+        assert len(self.goal_candidates) >= 1, "At least one goal is required"
 
     def _use_image_obs(self, image_observation_layers, directional=True):
         """
@@ -748,7 +747,7 @@ class Warehouse(gym.Env):
             self.grid[_LAYER_AGENTS, a.y, a.x] = a.id
 
         self.requested_package_grid[:] = 0
-        for p in self.request_queu:
+        for p in self.request_queue:
             self.requested_package_grid[p.y, p.x] += 1
 
     def _create_packages(self):
@@ -759,12 +758,6 @@ class Warehouse(gym.Env):
             _package = Package(_random_start_pos[0], _random_start_pos[1])
             _new_package_orders.append(_package)
         return _new_package_orders
-    
-    def _create_goals(self):
-        # goal is randomly generated among requested goals and can not overlap
-        return list(
-            np.random.choice(self.goal_candidates, size=self.requested_goal_size, replace=False)
-        )
 
     def reset(self):
         Shelf.counter = 0
@@ -806,8 +799,8 @@ class Warehouse(gym.Env):
         # self.request_queue = list(
         #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
         # )
-        self.request_queu = self._create_packages()
-        self.requested_goals = self._created_goals()
+        self.request_queue = self._create_packages()
+        self.requested_goals = random.sample(self.goal_candidates, self.requested_goal_size)
 
         return tuple([self._make_obs(agent) for agent in self.agents])
         # for s in self.shelfs:
@@ -989,7 +982,7 @@ if __name__ == "__main__":
     from tqdm import tqdm
 
     env.render()
-    time.sleep(2)
+    time.sleep(10)
     # env.step(18 * [Action.LOAD] + 2 * [Action.NOOP])
 
     for _ in tqdm(range(1000000)):

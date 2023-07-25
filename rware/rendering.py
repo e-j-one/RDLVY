@@ -62,13 +62,17 @@ _SHELF_REQ_COLOR = _TEAL
 _AGENT_COLOR = _DARKORANGE
 _AGENT_LOADED_COLOR = _RED
 _AGENT_DIR_COLOR = _BLACK
-_GOAL_COLOR = (60, 60, 60)
+# _GOAL_COLOR = (60, 60, 60)
+_GOAL_COLOR = _GREEN
 
-_START_CANDIDATE_COLOR = (100, 0, 0)
+_START_CANDIDATE_COLOR = (80, 0, 0)
+_REQUESTED_PACKAGE_COLOR = (200, 0, 0)
+_GOAL_CANDIDATE_COLOR = (60, 50, 120)
 # _PACKAGE_COLOR = _DARKSLATEBLUE
 # _PACKAGE_REQ_COLOR = _TEAL
 
 _START_CAND_PADDING = 1
+_GOAL_CAND_PADDING = 1
 _SHELF_PADDING = 2
 _PACKAGE_PADDING = 2
 
@@ -132,12 +136,12 @@ class Viewer(object):
         self.window.dispatch_events()
 
         self._draw_grid()
-        self._draw_goals(env)
         self._draw_shelfs(env)
-        self._draw_agents(env)
         self._draw_start_candidates(env)
-        # self._draw_goal_candidates(env)
-        # self._draw_packages(env)
+        self._draw_requested_packages(env)
+        self._draw_goal_candidates(env)
+        self._draw_goals(env)
+        self._draw_agents(env)
 
         if return_rgb_array:
             buffer = pyglet.image.get_buffer_manager().get_color_buffer()
@@ -221,7 +225,7 @@ class Viewer(object):
     def _draw_goals(self, env):
         batch = pyglet.graphics.Batch()
 
-        for goal in env.goals:
+        for goal in env.requested_goals:
             x, y = goal
             y = self.rows - y - 1  # pyglet rendering is reversed
             batch.add(
@@ -245,6 +249,60 @@ class Viewer(object):
             )
         batch.draw()
     
+    def _draw_goal_candidates(self, env):
+        batch = pyglet.graphics.Batch()
+
+        for goal in env.goal_candidates:
+            x, y = goal
+            y = self.rows - y - 1  # pyglet rendering is reversed
+            batch.add(
+                4,
+                gl.GL_QUADS,
+                None,
+                (
+                    "v2f",
+                    (
+                        (self.grid_size + 1) * x + _GOAL_CAND_PADDING + 1,  # TL - X
+                        (self.grid_size + 1) * y + _GOAL_CAND_PADDING + 1,  # TL - Y
+                        (self.grid_size + 1) * (x + 1) - _GOAL_CAND_PADDING,  # TR - X
+                        (self.grid_size + 1) * y + _GOAL_CAND_PADDING + 1,  # TR - Y
+                        (self.grid_size + 1) * (x + 1) - _GOAL_CAND_PADDING,  # BR - X
+                        (self.grid_size + 1) * (y + 1) - _GOAL_CAND_PADDING,  # BR - Y
+                        (self.grid_size + 1) * x + _GOAL_CAND_PADDING + 1,  # BL - X
+                        (self.grid_size + 1) * (y + 1) - _GOAL_CAND_PADDING,  # BL - Y
+                    ),
+                ),
+                ("c3B", 4 * _GOAL_CANDIDATE_COLOR),
+            )
+        batch.draw()
+
+    def _draw_requested_packages(self, env):
+        batch = pyglet.graphics.Batch()
+
+        for package in env.request_queue:
+            x, y = package.x, package.y
+            y = self.rows - y - 1  # pyglet rendering is reversed
+            batch.add(
+                4,
+                gl.GL_QUADS,
+                None,
+                (
+                    "v2f",
+                    (
+                        (self.grid_size + 1) * x + 1,  # TL - X
+                        (self.grid_size + 1) * y + 1,  # TL - Y
+                        (self.grid_size + 1) * (x + 1),  # TR - X
+                        (self.grid_size + 1) * y + 1,  # TR - Y
+                        (self.grid_size + 1) * (x + 1),  # BR - X
+                        (self.grid_size + 1) * (y + 1),  # BR - Y
+                        (self.grid_size + 1) * x + 1,  # BL - X
+                        (self.grid_size + 1) * (y + 1),  # BL - Y
+                    ),
+                ),
+                ("c3B", 4 * _REQUESTED_PACKAGE_COLOR),
+            )
+        batch.draw()
+
     def _draw_start_candidates(self, env):
         batch = pyglet.graphics.Batch()
 
