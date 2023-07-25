@@ -5,6 +5,7 @@ import gym
 from gym import spaces
 
 from rware.utils import MultiAgentActionSpace, MultiAgentObservationSpace
+from rware.utils.rdlvy_utils import select_hightway_positions
 
 from enum import Enum
 import numpy as np
@@ -85,6 +86,32 @@ class Entity:
         self.y = y
 
 
+class Package(Entity):
+    counter = 0
+
+    def __init__(self, x, y):
+        Package.counter += 1
+        super().__init__(Package.counter, x, y)
+
+class Container:
+    def __init__(self):
+        self._num_packages = 0
+        self.packages: List[Package] = []
+    
+    def load(self, package: Package):
+        self.packages.append(package)
+        self._num_packages += 1
+    
+    def unload(self):
+        if self._num_packages > 0:
+            self._num_packages -= 1
+            return self.packages.pop(0) # FIFO # TODO: pop package w/ specific idx
+        else:
+            return None
+    
+    def count_packages(self):
+        return self._num_packages
+
 class Agent(Entity):
     counter = 0
 
@@ -97,6 +124,8 @@ class Agent(Entity):
         self.carrying_shelf: Optional[Shelf] = None
         self.canceled_action = None
         self.has_delivered = False
+
+        self.container = Container()
 
     @property
     def collision_layers(self):
@@ -141,7 +170,6 @@ class Shelf(Entity):
     @property
     def collision_layers(self):
         return (_LAYER_SHELFS,)
-
 
 class Warehouse(gym.Env):
 
@@ -215,7 +243,7 @@ class Warehouse(gym.Env):
         :type msg_bits: int
         :param sensor_range: Range of each agents observation
         :type sensor_range: int
-        :param request_queue_size: How many shelfs are simultaneously requested
+        :param request_queue_size: How many shelfs->Packages are simultaneously requested
         :type request_queue_size: int
         :param max_inactivity: Number of steps without a delivered shelf until environment finishes
         :type max_inactivity: Optional[int]
@@ -236,6 +264,7 @@ class Warehouse(gym.Env):
         """
 
         self.goals: List[Tuple[int, int]] = []
+        self.start_candidates: List[Tuple[int, int]] = []
 
         if not layout:
             self._make_layout_from_params(shelf_columns, shelf_rows, column_height)
@@ -326,14 +355,21 @@ class Warehouse(gym.Env):
         self.grid_size = (grid_height, grid_width)
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
         self.highways = np.zeros(self.grid_size, dtype=np.int32)
+        self.goal_candidates = np.zeros(self.grid_size, dtype=np.int32)
+        self.start_locations = np.zeros(self.grid_size, dtype=np.int32)
 
         for y, line in enumerate(lines):
             for x, char in enumerate(line):
-                assert char.lower() in "gx."
+                assert char.lower() in "gxs."
                 if char.lower() == "g":
                     self.goals.append((x, y))
+                    self.goal_candidates[y, x] = 1
                     self.highways[y, x] = 1
                 elif char.lower() == ".":
+                    self.highways[y, x] = 1
+                elif char.lower() == "s":
+                    self.start_locations[y, x] = 1
+                    self.start_candidates.append((x,y))
                     self.highways[y, x] = 1
 
         assert len(self.goals) >= 1, "At least one goal is required"
@@ -483,6 +519,8 @@ class Warehouse(gym.Env):
                         layer = np.zeros(self.grid_size, dtype=np.float32)
                         for requested_shelf in self.request_queue:
                             layer[requested_shelf.y, requested_shelf.x] = 1.0
+                        # for package in self.request_queue:
+                        #     layer[package.y, package.x] = 1.0
                         # print("REQUESTS LAYER")
                     elif layer_type == ImageLayer.AGENTS:
                         layer = self.grid[_LAYER_AGENTS].copy().astype(np.float32)
@@ -605,6 +643,7 @@ class Warehouse(gym.Env):
                 else:
                     obs.write(
                         [1.0, int(self.shelfs[id_shelf - 1] in self.request_queue)]
+                        # [1.0, int(self.packages[id_shelf - 1] in self.request_queue)]
                     )
 
             return obs.vector
@@ -679,12 +718,14 @@ class Warehouse(gym.Env):
         ]
 
         # spawn agents at random locations
-        agent_locs = np.random.choice(
-            np.arange(self.grid_size[0] * self.grid_size[1]),
-            size=self.n_agents,
-            replace=False,
-        )
-        agent_locs = np.unravel_index(agent_locs, self.grid_size)
+        # agent_locs = np.random.choice(
+        #     np.arange(self.grid_size[0] * self.grid_size[1]),
+        #     size=self.n_agents,
+        #     replace=False,
+        # )
+        # agent_locs = np.unravel_index(agent_locs, self.grid_size)
+        agent_locs = select_hightway_positions(self.highways, self.n_agents)
+        
         # and direction
         agent_dirs = np.random.choice([d for d in Direction], size=self.n_agents)
         self.agents = [
@@ -742,6 +783,13 @@ class Warehouse(gym.Env):
                 # there's a standing shelf at the target location
                 # our agent is carrying a shelf so there's no way
                 # this movement can succeed. Cancel it.
+                agent.req_action = Action.NOOP
+                G.add_edge(start, start)
+            elif (
+                not self._is_highway(target[0], target[1])
+            ):
+                # start, goal candidiates are all on the highway
+                # agent can't move outside of highway
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
             else:
@@ -864,17 +912,18 @@ class Warehouse(gym.Env):
     
 
 if __name__ == "__main__":
-    env = Warehouse(9, 8, 3, 10, 3, 1, 5, None, None, RewardType.GLOBAL)
+    from layout import layout_smallstreet
+    env = Warehouse(9, 8, 3, 30, 3, 1, 5, None, None, RewardType.GLOBAL, layout=layout_smallstreet)
     env.reset()
     import time
     from tqdm import tqdm
 
+    env.render()
     time.sleep(2)
-    # env.render()
     # env.step(18 * [Action.LOAD] + 2 * [Action.NOOP])
 
     for _ in tqdm(range(1000000)):
         # time.sleep(2)
-        # env.render()
+        env.render()
         actions = env.action_space.sample()
         env.step(actions)
