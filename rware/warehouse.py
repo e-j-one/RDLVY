@@ -5,6 +5,7 @@ import gym
 from gym import spaces
 
 from rware.utils import MultiAgentActionSpace, MultiAgentObservationSpace
+from rware.utils.rdlvy_utils import select_hightway_positions
 
 from enum import Enum
 import numpy as np
@@ -678,13 +679,9 @@ class Warehouse(gym.Env):
             if not self._is_highway(x, y)
         ]
 
-        # spawn agents at random locations
-        agent_locs = np.random.choice(
-            np.arange(self.grid_size[0] * self.grid_size[1]),
-            size=self.n_agents,
-            replace=False,
-        )
-        agent_locs = np.unravel_index(agent_locs, self.grid_size)
+        # spawn agents on highways
+        agent_locs = select_hightway_positions(self.highways, self.n_agents)
+
         # and direction
         agent_dirs = np.random.choice([d for d in Direction], size=self.n_agents)
         self.agents = [
@@ -869,12 +866,12 @@ if __name__ == "__main__":
     import time
     from tqdm import tqdm
 
+    env.render()
     time.sleep(2)
-    # env.render()
     # env.step(18 * [Action.LOAD] + 2 * [Action.NOOP])
 
     for _ in tqdm(range(1000000)):
         # time.sleep(2)
-        # env.render()
+        env.render()
         actions = env.action_space.sample()
         env.step(actions)
