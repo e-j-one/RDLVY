@@ -53,6 +53,13 @@ class Direction(Enum):
     LEFT = 2
     RIGHT = 3
 
+class HighwayDirection(Enum):
+    DOWN = 0
+    UP = 1
+    RIGHT = 2
+    LEFT = 3
+    ALL = 4
+    NULL = 5
 
 class RewardType(Enum):
     GLOBAL = 0
@@ -393,6 +400,7 @@ class Warehouse(gym.Env):
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
         self.requested_package_grid = np.zeros(self.grid_size, dtype=np.int32)
         self.highways = np.zeros(self.grid_size, dtype=np.int32)
+        self.highways_info = np.zeros(self.highways.shape, dtype=np.int32)
 
         # start point where packages are waiting
         # cell indicates number of packages waiting
@@ -405,19 +413,26 @@ class Warehouse(gym.Env):
                     # self.goals.append((x, y))
                     self.goal_candidates.append((x, y))
                     self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.ALL.value
                 elif char.lower() == ".":
                     self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.ALL.value
                 elif char.lower() == "s":
                     self.start_candidates.append((x,y))
                     self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.ALL.value
                 elif char.lower() == "r":
                     self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.RIGHT.value
                 elif char.lower() == "l":
                     self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.LEFT.value
                 elif char.lower() == "d":
                     self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.DOWN.value
                 elif char.lower() == "u":
                     self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.UP.value
 
         assert len(self.goal_candidates) >= 1, "At least one goal is required"
 
@@ -805,6 +820,18 @@ class Warehouse(gym.Env):
             if not self._is_highway(x, y)
         ]
 
+        # Highways info update in edge points
+        # Agents can turn around in the edge of the map.
+        for y, x in zip(
+            np.indices(self.grid_size)[0].reshape(-1),
+            np.indices(self.grid_size)[1].reshape(-1),
+        ):
+            if self.highways_info[y, x] is not HighwayDirection.NULL.value:
+                if y == self.grid_size[0]-1 or x==self.grid_size[1]-1:
+                    self.highways_info[y, x] = HighwayDirection.ALL.value
+                elif y == 0 or x == 0:
+                    self.highways_info[y, x] = HighwayDirection.ALL.value
+
         # self.request_queue = list(
         #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
         # )
@@ -832,6 +859,7 @@ class Warehouse(gym.Env):
         ]
 
         self._recalc_grid()
+        print(self.highways_info)
         
         return tuple([self._make_obs(agent) for agent in self.agents])
         # for s in self.shelfs:
@@ -907,6 +935,24 @@ class Warehouse(gym.Env):
                 # there's a standing shelf at the target location
                 # our agent is carrying a shelf so there's no way
                 # this movement can succeed. Cancel it.
+                agent.req_action = Action.NOOP
+                G.add_edge(start, start)
+            elif (
+                not(
+                    self.highways_info[agent.y, agent.x] == HighwayDirection.ALL.value
+                    or self.highways_info[target[1], target[0]] == HighwayDirection.ALL.value
+                ) 
+                and not self.highways_info[target[1], target[0]] == self.highways_info[agent.y, agent.x]
+            ):
+                # if centerline violation occur where
+                # the current position is not an intersection point, cancel it
+                agent.req_action = Action.NOOP
+                G.add_edge(start, start)
+            elif (
+                agent.req_direction().value == self.highways_info[target[1], target[0]]
+            ):
+                # if the requested direction of the agent
+                # is opposite to the road direction, cancel it.
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
             elif (
