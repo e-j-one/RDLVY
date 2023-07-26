@@ -47,12 +47,6 @@ class Action(Enum):
     RIGHT = 3
     TOGGLE_LOAD = 4
 
-
-class Line(Enum):
-    LEFT = 0
-    RIGHT = 1
-
-
 class Direction(Enum):
     UP = 0
     DOWN = 1
@@ -136,7 +130,7 @@ class Container:
 class Agent(Entity):
     counter = 0
 
-    def __init__(self, x: int, y: int, dir_: Direction, line_: Line, msg_bits: int):
+    def __init__(self, x: int, y: int, dir_: Direction, msg_bits: int):
         Agent.counter += 1
         super().__init__(Agent.counter, x, y)
         self.dir = dir_
@@ -145,7 +139,6 @@ class Agent(Entity):
         self.carrying_shelf: Optional[Shelf] = None
         self.canceled_action = None
         self.has_delivered = False
-        self.line = line_
 
         self.container = Container()
 
@@ -834,12 +827,9 @@ class Warehouse(gym.Env):
         # and direction
         agent_dirs = np.random.choice([d for d in Direction], size=self.n_agents)
 
-        # and line info
-        agent_lines = np.random.choice([l for l in Line], size=self.n_agents)
-        
         self.agents = [
             Agent(x, y, dir_, line_, self.msg_bits)
-            for y, x, dir_, line_ in zip(*agent_locs, agent_dirs, agent_lines)
+            for y, x, dir_ in zip(*agent_locs, agent_dirs, agent_lines)
         ]
 
         self._recalc_grid()
@@ -894,18 +884,9 @@ class Warehouse(gym.Env):
         # forward_agents = [agent for agent in self.agents if agent.action == Action.FORWARD]
         commited_agents = set()
 
-        agents_in_left = [agent for agent in self.agents if agent.line==Line.LEFT]
-        agents_in_right = [agent for agent in self.agents if agent.line==Line.RIGHT]
-        assert len(agents_in_left+agents_in_right) == len(self.agents)
+        G = nx.DiGraph()
 
-        G_leftline = nx.DiGraph()
-        G_rightline = nx.DiGraph()
-
-        for agent in agents_in_left:
-            start = 
-        
-
-        for agent in agents_in_left:
+        for agent in self.agents:
             start = agent.x, agent.y
             target = agent.req_location(self.grid_size)
 
@@ -924,7 +905,7 @@ class Warehouse(gym.Env):
                 # our agent is carrying a shelf so there's no way
                 # this movement can succeed. Cancel it.
                 agent.req_action = Action.NOOP
-                G_leftline.add_edge(start, start)
+                G.add_edge(start, start)
             elif (
                 not self._is_highway(target[0], target[1])
             ):
@@ -935,7 +916,7 @@ class Warehouse(gym.Env):
             else:
                 G.add_edge(start, target)
 
-        wcomps_left = [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
+        wcomps= [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
 
         for comp in wcomps:
             try:
@@ -1094,7 +1075,7 @@ class Warehouse(gym.Env):
 if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
-    from layout import layout_smallstreet
+    from layout import layout_smallstreet, layout_2way
     env = Warehouse(9, 8, 3, 30, 3, 1, 10, None, None, RewardType.GLOBAL, layout=layout_smallstreet)
     env.reset()
     import time
