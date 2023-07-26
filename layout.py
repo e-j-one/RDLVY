@@ -143,8 +143,8 @@ xxgxgxxxdusxgx
 llllllll..llll
 rrrrrrrr..rrrr
 xxgxgxxxduxxxs
-xxxxxllllusxxx
-xxxxxdurruxxxx
+xxxxxddddusxxx
+xxxxxduuuuxxxx
 xxxxxduxxxxxxx
 """
 
