@@ -400,7 +400,7 @@ class Warehouse(gym.Env):
 
         for y, line in enumerate(lines):
             for x, char in enumerate(line):
-                assert char.lower() in "gxs."
+                assert char.lower() in "gxsrldu."
                 if char.lower() == "g":
                     # self.goals.append((x, y))
                     self.goal_candidates.append((x, y))
@@ -409,6 +409,14 @@ class Warehouse(gym.Env):
                     self.highways[y, x] = 1
                 elif char.lower() == "s":
                     self.start_candidates.append((x,y))
+                    self.highways[y, x] = 1
+                elif char.lower() == "r":
+                    self.highways[y, x] = 1
+                elif char.lower() == "l":
+                    self.highways[y, x] = 1
+                elif char.lower() == "d":
+                    self.highways[y, x] = 1
+                elif char.lower() == "u":
                     self.highways[y, x] = 1
 
         assert len(self.goal_candidates) >= 1, "At least one goal is required"
@@ -847,7 +855,6 @@ class Warehouse(gym.Env):
     def _replace_goal(self, x, y):
         for i, goal_pose in enumerate(self.requested_goals):
             if goal_pose[0] == x and goal_pose[1] == y:
-                self.highways[y, x] = 0
                 del self.requested_goals[i]
                 break
         
@@ -867,6 +874,11 @@ class Warehouse(gym.Env):
                 agent.message[:] = action[1:]
             else:
                 agent.req_action = Action(action)
+        
+        _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
+        for _u_goals in _unselected_goals:
+            if not self.grid[_LAYER_AGENTS, _u_goals[1], _u_goals[0]]:
+                self.highways[_u_goals[1], _u_goals[0]] = 0
 
         # # stationary agents will certainly stay where they are
         # stationary_agents = [agent for agent in self.agents if agent.action != Action.FORWARD]
@@ -1066,8 +1078,8 @@ class Warehouse(gym.Env):
 if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
-    from layout import layout_smallstreet, layout_2way
-    env = Warehouse(9, 8, 3, 30, 3, 1, 10, None, None, RewardType.GLOBAL, layout=layout_smallstreet)
+    from layout import layout_smallstreet, layout_2way_simple
+    env = Warehouse(9, 8, 3, 2, 3, 1, 2, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
     env.reset()
     import time
     from tqdm import tqdm

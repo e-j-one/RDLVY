@@ -103,8 +103,8 @@ class Viewer(object):
         display = get_display(None)
         self.rows, self.cols = world_size
 
-        self.grid_size = 18 #30
-        self.icon_size = 18 #20
+        self.grid_size = 30
+        self.icon_size = 20
 
         self.width = 1 + self.cols * (self.grid_size + 1)
         self.height = 1 + self.rows * (self.grid_size + 1)
