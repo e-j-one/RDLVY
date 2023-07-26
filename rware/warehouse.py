@@ -408,7 +408,7 @@ class Warehouse(gym.Env):
 
         for y, line in enumerate(lines):
             for x, char in enumerate(line):
-                assert char.lower() in "gxs1234."
+                assert char.lower() in "gxsrldu."
                 if char.lower() == "g":
                     # self.goals.append((x, y))
                     self.goal_candidates.append((x, y))
@@ -421,16 +421,16 @@ class Warehouse(gym.Env):
                     self.start_candidates.append((x,y))
                     self.highways[y, x] = 1
                     self.highways_info[y, x] = HighwayDirection.ALL.value
-                elif char.lower() == "1":
+                elif char.lower() == "r":
                     self.highways[y, x] = 1
                     self.highways_info[y, x] = HighwayDirection.RIGHT.value
-                elif char.lower() == "2":
+                elif char.lower() == "l":
                     self.highways[y, x] = 1
                     self.highways_info[y, x] = HighwayDirection.LEFT.value
-                elif char.lower() == "3":
+                elif char.lower() == "d":
                     self.highways[y, x] = 1
                     self.highways_info[y, x] = HighwayDirection.DOWN.value
-                elif char.lower() == "4":
+                elif char.lower() == "u":
                     self.highways[y, x] = 1
                     self.highways_info[y, x] = HighwayDirection.UP.value
 
