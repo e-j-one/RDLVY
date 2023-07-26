@@ -400,7 +400,7 @@ class Warehouse(gym.Env):
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
         self.requested_package_grid = np.zeros(self.grid_size, dtype=np.int32)
         self.highways = np.zeros(self.grid_size, dtype=np.int32)
-        self.highways_info = np.zeros(self.highways.shape, dtype=np.int32)
+        self.highways_info = np.zeros(self.highways.shape, dtype=np.int32) + HighwayDirection.NULL.value
 
         # start point where packages are waiting
         # cell indicates number of packages waiting
@@ -826,7 +826,7 @@ class Warehouse(gym.Env):
             np.indices(self.grid_size)[0].reshape(-1),
             np.indices(self.grid_size)[1].reshape(-1),
         ):
-            if self.highways_info[y, x] is not HighwayDirection.NULL.value:
+            if not self.highways_info[y, x] == HighwayDirection.NULL.value:
                 if y == self.grid_size[0]-1 or x==self.grid_size[1]-1:
                     self.highways_info[y, x] = HighwayDirection.ALL.value
                 elif y == 0 or x == 0:
@@ -859,7 +859,6 @@ class Warehouse(gym.Env):
         ]
 
         self._recalc_grid()
-        print(self.highways_info)
         
         return tuple([self._make_obs(agent) for agent in self.agents])
         # for s in self.shelfs:
@@ -942,7 +941,7 @@ class Warehouse(gym.Env):
                     self.highways_info[agent.y, agent.x] == HighwayDirection.ALL.value
                     or self.highways_info[target[1], target[0]] == HighwayDirection.ALL.value
                 ) 
-                and not self.highways_info[target[1], target[0]] == self.highways_info[agent.y, agent.x]
+                and (self.highways_info[target[1], target[0]] + self.highways_info[agent.y, agent.x]) % 4 == 1
             ):
                 # if centerline violation occur where
                 # the current position is not an intersection point, cancel it
@@ -1124,8 +1123,8 @@ class Warehouse(gym.Env):
 if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
-    from layout import layout_smallstreet, layout_2way_simple
-    env = Warehouse(9, 8, 3, 2, 3, 1, 2, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
+    from layout import layout_smallstreet, layout_2way, layout_2way_simple
+    env = Warehouse(9, 8, 3, 3, 3, 8, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
     env.reset()
     import time
     from tqdm import tqdm
