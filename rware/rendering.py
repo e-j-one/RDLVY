@@ -103,12 +103,12 @@ def get_display(spec):
 
 
 class Viewer(object):
-    def __init__(self, world_size):
+    def __init__(self, world_size, render_size="big"):
         display = get_display(None)
         self.rows, self.cols = world_size
 
-        self.grid_size = 30
-        self.icon_size = 20
+        self.grid_size = 30 if render_size=="big" else 16
+        self.icon_size = 20 if render_size=="big" else 15
 
         self.width = 1 + self.cols * (self.grid_size + 1)
         self.height = 1 + self.rows * (self.grid_size + 1)
@@ -341,7 +341,7 @@ class Viewer(object):
         agents = []
         batch = pyglet.graphics.Batch()
 
-        radius = self.grid_size / 2.5#3
+        radius = self.grid_size / 2.3
 
         resolution = 6
 

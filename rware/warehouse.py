@@ -229,7 +229,8 @@ class Warehouse(gym.Env):
         ],
         image_observation_directional: bool=True,
         normalised_coordinates: bool=False,
-        package_carrying_capacity_per_agent: int = 3
+        package_carrying_capacity_per_agent: int = 3,
+        render_size="big"
     ):
         """The robotic warehouse environment
 
@@ -324,7 +325,8 @@ class Warehouse(gym.Env):
         self._cur_inactive_steps = None
         self._cur_steps = 0
         self.max_steps = max_steps
-        
+        self.render_size = render_size
+
         self.normalised_coordinates = normalised_coordinates
 
         sa_action_space = [len(Action), *msg_bits * (2,)]
@@ -1291,7 +1293,7 @@ class Warehouse(gym.Env):
         if not self.renderer:
             from rware.rendering import Viewer
 
-            self.renderer = Viewer(self.grid_size)
+            self.renderer = Viewer(self.grid_size, self.render_size)
         return self.renderer.render(self, return_rgb_array=mode == "rgb_array")
 
     def close(self):
@@ -1306,8 +1308,8 @@ if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
     from layout import layout_smallstreet, layout_2way, layout_2way_simple
-    # env = Warehouse(9, 8, 3, 30, 3, 10, 30, None, None, RewardType.GLOBAL, layout=layout_2way)
-    env = Warehouse(9, 8, 3, 3, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
+    env = Warehouse(9, 8, 3, 30, 3, 10, 30, None, None, RewardType.GLOBAL, layout=layout_2way, render_size="small")
+    # env = Warehouse(9, 8, 3, 3, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple, render_size="big")
     env.reset()
     import time
     from tqdm import tqdm
