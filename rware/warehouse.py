@@ -47,11 +47,13 @@ class Action(Enum):
     RIGHT = 3
     TOGGLE_LOAD = 4
 
+
 class Direction(Enum):
     UP = 0
     DOWN = 1
     LEFT = 2
     RIGHT = 3
+
 
 class HighwayDirection(Enum):
     UP = 0
@@ -60,6 +62,7 @@ class HighwayDirection(Enum):
     RIGHT = 3
     ALL = 4
     NULL = 5
+
 
 class RewardType(Enum):
     GLOBAL = 0
@@ -72,17 +75,19 @@ class ObserationType(Enum):
     FLATTENED = 1
     IMAGE = 2
 
+
 class ImageLayer(Enum):
     """
     Input layers of image-style observations
     """
-    SHELVES = 0 # binary layer indicating shelves (also indicates carried shelves)
-    REQUESTS = 1 # binary layer indicating requested shelves
-    AGENTS = 2 # binary layer indicating agents in the environment (no way to distinguish agents)
-    AGENT_DIRECTION = 3 # layer indicating agent directions as int (see Direction enum + 1 for values)
-    AGENT_LOAD = 4 # binary layer indicating agents with load
-    GOALS = 5 # binary layer indicating goal/ delivery locations
-    ACCESSIBLE = 6 # binary layer indicating accessible cells (all but occupied cells/ out of map)
+
+    SHELVES = 0  # binary layer indicating shelves (also indicates carried shelves)
+    REQUESTS = 1  # binary layer indicating requested shelves
+    AGENTS = 2  # binary layer indicating agents in the environment (no way to distinguish agents)
+    AGENT_DIRECTION = 3  # layer indicating agent directions as int (see Direction enum + 1 for values)
+    AGENT_LOAD = 4  # binary layer indicating agents with load
+    GOALS = 5  # binary layer indicating goal/ delivery locations
+    ACCESSIBLE = 6  # binary layer indicating accessible cells (all but occupied cells/ out of map)
 
 
 class Entity:
@@ -105,34 +110,36 @@ class Package(Entity):
         self.x = x
         self.y = y
 
+
 class Container:
     def __init__(self):
         self._num_packages = 0
         self.packages: List[Package] = []
-    
+
     def load(self, package: Package):
         self.packages.append(package)
         self._num_packages += 1
-    
+
     def unload(self):
         if self._num_packages > 0:
             self._num_packages -= 1
-            return self.packages.pop(0) # FIFO # TODO: pop package w/ specific idx
+            return self.packages.pop(0)  # FIFO # TODO: pop package w/ specific idx
         else:
             return None
-    
+
     def count_packages(self):
         return self._num_packages
-    
+
     def carrying_packages(self):
-        if self._num_packages >0:
+        if self._num_packages > 0:
             return True
         else:
             return None
-    
+
     def move_package(self, x, y):
         for package in self.packages:
-            package.move(x,y)
+            package.move(x, y)
+
 
 class Agent(Entity):
     counter = 0
@@ -155,7 +162,7 @@ class Agent(Entity):
             return (_LAYER_AGENTS, _LAYER_SHELFS)
         else:
             return (_LAYER_AGENTS,)
-        
+
     def carrying_package(self):
         # return None if not carrying package
         # return True of carrying package else
@@ -185,7 +192,7 @@ class Agent(Entity):
             return wraplist[(wraplist.index(self.dir) - 1) % len(wraplist)]
         else:
             return self.dir
-    
+
     def move_container(self):
         # drag container to agent's location
         self.container.move_package(self.x, self.y)
@@ -202,8 +209,8 @@ class Shelf(Entity):
     def collision_layers(self):
         return (_LAYER_SHELFS,)
 
-class Warehouse(gym.Env):
 
+class Warehouse(gym.Env):
     metadata = {"render.modes": ["human", "rgb_array"]}
 
     def __init__(
@@ -219,18 +226,18 @@ class Warehouse(gym.Env):
         max_steps: Optional[int],
         reward_type: RewardType,
         layout: str = None,
-        observation_type: ObserationType=ObserationType.FLATTENED,
-        image_observation_layers: List[ImageLayer]=[
+        observation_type: ObserationType = ObserationType.FLATTENED,
+        image_observation_layers: List[ImageLayer] = [
             ImageLayer.SHELVES,
             ImageLayer.REQUESTS,
             ImageLayer.AGENTS,
             ImageLayer.GOALS,
-            ImageLayer.ACCESSIBLE
+            ImageLayer.ACCESSIBLE,
         ],
-        image_observation_directional: bool=True,
-        normalised_coordinates: bool=False,
+        image_observation_directional: bool = True,
+        normalised_coordinates: bool = False,
         package_carrying_capacity_per_agent: int = 3,
-        render_size="big"
+        render_size="big",
     ):
         """The robotic warehouse environment
 
@@ -402,7 +409,12 @@ class Warehouse(gym.Env):
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
         self.requested_package_grid = np.zeros(self.grid_size, dtype=np.int32)
         self.highways = np.zeros(self.grid_size, dtype=np.int32)
-        self.highways_info = np.array([HighwayDirection.NULL for _ in range(self.grid_size[0]*self.grid_size[1])]).reshape(self.grid_size)
+        self.highways_info = np.array(
+            [
+                HighwayDirection.NULL
+                for _ in range(self.grid_size[0] * self.grid_size[1])
+            ]
+        ).reshape(self.grid_size)
 
         # start point where packages are waiting
         # cell indicates number of packages waiting
@@ -420,7 +432,7 @@ class Warehouse(gym.Env):
                     self.highways[y, x] = 1
                     self.highways_info[y, x] = HighwayDirection.ALL
                 elif char.lower() == "s":
-                    self.start_candidates.append((x,y))
+                    self.start_candidates.append((x, y))
                     self.highways[y, x] = 1
                     # self.highways_info[y, x] = HighwayDirection.ALL
                 elif char.lower() == "r":
@@ -458,7 +470,9 @@ class Warehouse(gym.Env):
             if layer == ImageLayer.AGENT_DIRECTION:
                 # directions as int
                 layer_min = np.zeros(observation_shape, dtype=np.float32)
-                layer_max = np.ones(observation_shape, dtype=np.float32) * max([d.value + 1 for d in Direction])
+                layer_max = np.ones(observation_shape, dtype=np.float32) * max(
+                    [d.value + 1 for d in Direction]
+                )
             else:
                 # binary layer
                 layer_min = np.zeros(observation_shape, dtype=np.float32)
@@ -491,10 +505,10 @@ class Warehouse(gym.Env):
 
         if self.normalised_coordinates:
             location_space = spaces.Box(
-                    low=0.0,
-                    high=1.0,
-                    shape=(2,),
-                    dtype=np.float32,
+                low=0.0,
+                high=1.0,
+                shape=(2,),
+                dtype=np.float32,
             )
         else:
             location_space = spaces.MultiDiscrete(
@@ -511,9 +525,13 @@ class Warehouse(gym.Env):
                                     OrderedDict(
                                         {
                                             "location": location_space,
-                                            "carrying_shelf": spaces.MultiDiscrete([2]), # Now works as carrying_package # TODO: change name
+                                            "carrying_shelf": spaces.MultiDiscrete(
+                                                [2]
+                                            ),  # Now works as carrying_package # TODO: change name
                                             "direction": spaces.Discrete(4),
-                                            "on_highway": spaces.MultiBinary(1), # Should always be true
+                                            "on_highway": spaces.MultiBinary(
+                                                1
+                                            ),  # Should always be true
                                         }
                                     )
                                 ),
@@ -528,10 +546,12 @@ class Warehouse(gym.Env):
                                                     "local_message": spaces.MultiBinary(
                                                         self.msg_bits
                                                     ),
-                                                    "has_shelf": spaces.MultiBinary(1), # Leave it as location of shelf # TODO: change name
+                                                    "has_shelf": spaces.MultiBinary(
+                                                        1
+                                                    ),  # Leave it as location of shelf # TODO: change name
                                                     "shelf_requested": spaces.MultiBinary(
                                                         1
-                                                    ), # Now works as package_packages # TODO: change name
+                                                    ),  # Now works as package_packages # TODO: change name
                                                 }
                                             )
                                         ),
@@ -582,7 +602,7 @@ class Warehouse(gym.Env):
                     elif layer_type == ImageLayer.REQUESTS:
                         layer = np.zeros(self.grid_size, dtype=np.float32)
                         # for requested_shelf in self.request_queue:
-                            # layer[requested_shelf.y, requested_shelf.x] = 1.0
+                        # layer[requested_shelf.y, requested_shelf.x] = 1.0
                         for package in self.request_queue:
                             layer[package.y, package.x] = 1.0
                         # print("REQUESTS LAYER")
@@ -615,7 +635,9 @@ class Warehouse(gym.Env):
                     elif layer_type == ImageLayer.ACCESSIBLE:
                         layer = np.ones(self.grid_size, dtype=np.float32)
                         for ag in self.agents:
-                            layer[ag.y, ag.x] = 0.0 # TODO: change accessiblity as road become two-way
+                            layer[
+                                ag.y, ag.x
+                            ] = 0.0  # TODO: change accessiblity as road become two-way
                         # print("ACCESSIBLE LAYER")
                     # print(layer)
                     # print()
@@ -635,13 +657,13 @@ class Warehouse(gym.Env):
                 # rotate image to be in direction of agent
                 if agent.dir == Direction.DOWN:
                     # rotate by 180 degrees (clockwise)
-                    obs = np.rot90(obs, k=2, axes=(1,2))
+                    obs = np.rot90(obs, k=2, axes=(1, 2))
                 elif agent.dir == Direction.LEFT:
                     # rotate by 90 degrees (clockwise)
-                    obs = np.rot90(obs, k=3, axes=(1,2))
+                    obs = np.rot90(obs, k=3, axes=(1, 2))
                 elif agent.dir == Direction.RIGHT:
                     # rotate by 270 degrees (clockwise)
-                    obs = np.rot90(obs, k=1, axes=(1,2))
+                    obs = np.rot90(obs, k=1, axes=(1, 2))
                 # no rotation needed for UP direction
             return obs
 
@@ -680,7 +702,9 @@ class Warehouse(gym.Env):
 
         agents = padded_agents[min_y:max_y, min_x:max_x].reshape(-1)
         shelfs = padded_shelfs[min_y:max_y, min_x:max_x].reshape(-1)
-        requested_packages = padded_requested_packages[min_y:max_y, min_x:max_x].reshape(-1)
+        requested_packages = padded_requested_packages[
+            min_y:max_y, min_x:max_x
+        ].reshape(-1)
 
         if self.fast_obs:
             # write flattened observations
@@ -700,7 +724,9 @@ class Warehouse(gym.Env):
             obs.write(direction)
             obs.write([int(self._is_highway(agent.x, agent.y))])
 
-            for i, (id_agent, id_shelf, num_requested_packages) in enumerate(zip(agents, shelfs, requested_packages)):
+            for i, (id_agent, id_shelf, num_requested_packages) in enumerate(
+                zip(agents, shelfs, requested_packages)
+            ):
                 if id_agent == 0:
                     obs.skip(1)
                     obs.write([1.0])
@@ -725,7 +751,7 @@ class Warehouse(gym.Env):
                     obs.write([1.0])
 
             return obs.vector
- 
+
         # write dictionary observations
         obs = {}
         if self.normalised_coordinates:
@@ -738,7 +764,7 @@ class Warehouse(gym.Env):
         obs["self"] = {
             "location": np.array([agent_x, agent_y]),
             # "carrying_shelf": [int(agent.carrying_shelf is not None)],
-            "carrying_shelf": [int(agent.carrying_package() is not None)], 
+            "carrying_shelf": [int(agent.carrying_package() is not None)],
             "direction": agent.dir.value,
             "on_highway": [int(self._is_highway(agent.x, agent.y))],
         }
@@ -754,7 +780,9 @@ class Warehouse(gym.Env):
             else:
                 obs["sensors"][i]["has_agent"] = [1]
                 obs["sensors"][i]["direction"] = self.agents[id_ - 1].dir.value
-                obs["sensors"][i]["local_message"] = self.agents[id_ - 1].message # TODO: change messages
+                obs["sensors"][i]["local_message"] = self.agents[
+                    id_ - 1
+                ].message  # TODO: change messages
 
         # find neighboring shelfs:
         for i, id_ in enumerate(shelfs):
@@ -792,11 +820,13 @@ class Warehouse(gym.Env):
         _new_package_orders = []
         for i in range(self.request_queue_size):
             _random_start_pos = random.choice(self.start_candidates)
-            self.starts_with_package_grid[_random_start_pos[1], _random_start_pos[0]] += 1
+            self.starts_with_package_grid[
+                _random_start_pos[1], _random_start_pos[0]
+            ] += 1
             _package = Package(_random_start_pos[0], _random_start_pos[1])
             _new_package_orders.append(_package)
         return _new_package_orders
-    
+
     def _create_new_package(self):
         _random_start_pos = random.choice(self.start_candidates)
         self.starts_with_package_grid[_random_start_pos[1], _random_start_pos[0]] += 1
@@ -810,8 +840,7 @@ class Warehouse(gym.Env):
                 line_info.append(self.highways_info[i, j].value)
             print(line_info)
             print()
-    
-    
+
     def reset(self):
         Shelf.counter = 0
         Agent.counter = 0
@@ -834,8 +863,12 @@ class Warehouse(gym.Env):
         #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
         # )
         self.request_queue = self._create_packages()
-        self.requested_goals = random.sample(self.goal_candidates, self.requested_goal_size)
-        _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
+        self.requested_goals = random.sample(
+            self.goal_candidates, self.requested_goal_size
+        )
+        _unselected_goals = [
+            goal for goal in self.goal_candidates if goal not in self.requested_goals
+        ]
         for _u_goals in _unselected_goals:
             self.highways[_u_goals[1], _u_goals[0]] = 0
 
@@ -847,7 +880,7 @@ class Warehouse(gym.Env):
         # )
         # agent_locs = np.unravel_index(agent_locs, self.grid_size)
         agent_locs = select_highway_positions(self.highways, self.n_agents)
-        
+
         # and direction
         agent_dirs = np.random.choice([d for d in Direction], size=self.n_agents)
 
@@ -857,7 +890,7 @@ class Warehouse(gym.Env):
         ]
 
         self._recalc_grid()
-        
+
         # Highways info update in edge points
         # Agents can turn around in the edge of the map.
         """
@@ -871,14 +904,14 @@ class Warehouse(gym.Env):
                 elif y == 0 or x == 0:
                     self.highways_info[y, x] = HighwayDirection.ALL
         self._print_highways_info()
-        """          
+        """
         return tuple([self._make_obs(agent) for agent in self.agents])
         # for s in self.shelfs:
         #     self.grid[0, s.y, s.x] = 1
         # print(self.grid[0])
 
     def _is_start_pose_with_package(self, x, y):
-        if self.requested_package_grid[y,x] > 0:
+        if self.requested_package_grid[y, x] > 0:
             return True
         else:
             return False
@@ -889,15 +922,17 @@ class Warehouse(gym.Env):
                 del self.request_queue[i]
                 self.starts_with_package_grid[y, x] -= 1
                 return package
-        raise ValueError(f'No package found at location ({x}, {y})')
+        raise ValueError(f"No package found at location ({x}, {y})")
 
     def _replace_goal(self, x, y):
         for i, goal_pose in enumerate(self.requested_goals):
             if goal_pose[0] == x and goal_pose[1] == y:
                 del self.requested_goals[i]
                 break
-        
-        _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
+
+        _unselected_goals = [
+            goal for goal in self.goal_candidates if goal not in self.requested_goals
+        ]
         _new_goal = random.choice(_unselected_goals)
         self.highways[_new_goal[1], _new_goal[0]] = 1
         self.requested_goals.append(_new_goal)
@@ -905,29 +940,51 @@ class Warehouse(gym.Env):
     def _check_nearby(self, pos):
         assert self.highways_info[pos[1], pos[0]] == HighwayDirection.ALL
         # num_nearby_ALL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT = 0, 0, 0, 0, 0
-        num_nearby_ALL, num_nearby_NULL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT = 0, 0, 0, 0, 0, 0
-        for i, j  in zip([0, 0, 1, -1], [1, -1 ,0, 0]):
-            if (pos[1]+i > self.grid_size[0]-1 or pos[1]+i < 0):
+        (
+            num_nearby_ALL,
+            num_nearby_NULL,
+            num_nearby_UP,
+            num_nearby_DOWN,
+            num_nearby_LEFT,
+            num_nearby_RIGHT,
+        ) = (0, 0, 0, 0, 0, 0)
+        for i, j in zip([0, 0, 1, -1], [1, -1, 0, 0]):
+            if pos[1] + i > self.grid_size[0] - 1 or pos[1] + i < 0:
                 i = 0
-            elif (pos[0]+j > self.grid_size[1]-1 or pos[0]+j < 0):
+            elif pos[0] + j > self.grid_size[1] - 1 or pos[0] + j < 0:
                 j = 0
             # print(pos[1], i, pos[0], j)
-            if self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.ALL:
+            if self.highways_info[pos[1] + i, pos[0] + j] == HighwayDirection.ALL:
                 num_nearby_ALL += 1
-            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.NULL:
+            elif self.highways_info[pos[1] + i, pos[0] + j] == HighwayDirection.NULL:
                 num_nearby_NULL += 1
-            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.UP:
+            elif self.highways_info[pos[1] + i, pos[0] + j] == HighwayDirection.UP:
                 num_nearby_UP += 1
-            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.DOWN:
+            elif self.highways_info[pos[1] + i, pos[0] + j] == HighwayDirection.DOWN:
                 num_nearby_DOWN += 1
-            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.LEFT:
+            elif self.highways_info[pos[1] + i, pos[0] + j] == HighwayDirection.LEFT:
                 num_nearby_LEFT += 1
-            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.RIGHT:
+            elif self.highways_info[pos[1] + i, pos[0] + j] == HighwayDirection.RIGHT:
                 num_nearby_RIGHT += 1
-        
-        assert num_nearby_ALL+num_nearby_NULL+num_nearby_UP+num_nearby_DOWN+num_nearby_LEFT+num_nearby_RIGHT == 4
-        
-        return num_nearby_ALL, num_nearby_NULL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT
+
+        assert (
+            num_nearby_ALL
+            + num_nearby_NULL
+            + num_nearby_UP
+            + num_nearby_DOWN
+            + num_nearby_LEFT
+            + num_nearby_RIGHT
+            == 4
+        )
+
+        return (
+            num_nearby_ALL,
+            num_nearby_NULL,
+            num_nearby_UP,
+            num_nearby_DOWN,
+            num_nearby_LEFT,
+            num_nearby_RIGHT,
+        )
 
     # for intersection type 1...
     # Intersection type 1:
@@ -939,141 +996,184 @@ class Warehouse(gym.Env):
     # Need to find where the wall is.
     def _check_corner(self, pos):
         assert self.highways_info[pos[1], pos[0]] == HighwayDirection.ALL
-        for i, j in zip([1, 1, -1, -1], [1, -1 ,1, -1]):
-            if self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.NULL:
+        for i, j in zip([1, 1, -1, -1], [1, -1, 1, -1]):
+            if self.highways_info[pos[1] + i, pos[0] + j] == HighwayDirection.NULL:
                 return (j, i)
         AssertionError("The position is not an intersection type 1.")
 
-            
-    def _is_possible_dir(self, highway_dir: HighwayDirection, req_dir:Direction, agent_pos: tuple) -> bool:
+    def _is_possible_dir(
+        self, highway_dir: HighwayDirection, req_dir: Direction, agent_pos: tuple
+    ) -> bool:
         if highway_dir == HighwayDirection.UP:
-            if req_dir == Direction.DOWN or req_dir==Direction.LEFT:
+            if req_dir == Direction.DOWN or req_dir == Direction.LEFT:
                 return False
         elif highway_dir == HighwayDirection.DOWN:
-            if req_dir == Direction.UP or req_dir==Direction.RIGHT:
+            if req_dir == Direction.UP or req_dir == Direction.RIGHT:
                 return False
         elif highway_dir == HighwayDirection.LEFT:
-            if req_dir == Direction.RIGHT or req_dir==Direction.DOWN:
+            if req_dir == Direction.RIGHT or req_dir == Direction.DOWN:
                 return False
         elif highway_dir == HighwayDirection.RIGHT:
-            if req_dir == Direction.LEFT or req_dir==Direction.UP:
+            if req_dir == Direction.LEFT or req_dir == Direction.UP:
                 return False
         # Intersection logic
-        elif highway_dir == HighwayDirection.ALL: 
+        elif highway_dir == HighwayDirection.ALL:
             n_ALL, n_NULL, n_UP, n_DOWN, n_LEFT, n_RIGHT = self._check_nearby(agent_pos)
             # when the number of possible direction is 3 (except the direction where the agent comes from)
             if n_NULL == 2:
-                if n_UP * n_LEFT: 
-                    if req_dir == Direction.LEFT: return True
+                if n_UP * n_LEFT:
+                    if req_dir == Direction.LEFT:
+                        return True
                 elif n_DOWN * n_RIGHT:
-                    if req_dir == Direction.RIGHT: return True
+                    if req_dir == Direction.RIGHT:
+                        return True
                 elif n_LEFT * n_DOWN:
-                    if req_dir == Direction.DOWN: return True
+                    if req_dir == Direction.DOWN:
+                        return True
                 elif n_RIGHT * n_UP:
-                    if req_dir == Direction.UP: return True
+                    if req_dir == Direction.UP:
+                        return True
                 else:
-                    AssertionError("Somethings wrong in layout. Check the intersection_3 part.")
-                return False 
+                    AssertionError(
+                        "Somethings wrong in layout. Check the intersection_3 part."
+                    )
+                return False
             # when the number of possible direction is 1
             elif n_NULL == 0:
                 if self._check_corner(agent_pos) == (1, 1):
                     # the corner is at the botton-right
-                    if req_dir == Direction.RIGHT: return True
+                    if req_dir == Direction.RIGHT:
+                        return True
                 elif self._check_corner(agent_pos) == (1, -1):
                     # up-right
-                    if req_dir == Direction.UP: return True
+                    if req_dir == Direction.UP:
+                        return True
                 elif self._check_corner(agent_pos) == (-1, 1):
                     # bottom-left
-                    if req_dir == Direction.DOWN: return True
+                    if req_dir == Direction.DOWN:
+                        return True
                 elif self._check_corner(agent_pos) == (-1, -1):
                     # up-left
-                    if req_dir == Direction.LEFT: return True
+                    if req_dir == Direction.LEFT:
+                        return True
                 return False
             # u-turn points
             # TODO: Apply below code for explicit u-turn point
             elif n_NULL == 1:
-                if agent_pos[1]+1 > self.grid_size[0] - 1:
-                    if self.highways_info[agent_pos[1], agent_pos[0]-1] == HighwayDirection.NULL:
-                        if (agent_pos[1], agent_pos[0]+1) in self.requested_goals:
+                if agent_pos[1] + 1 > self.grid_size[0] - 1:
+                    if (
+                        self.highways_info[agent_pos[1], agent_pos[0] - 1]
+                        == HighwayDirection.NULL
+                    ):
+                        if (agent_pos[1], agent_pos[0] + 1) in self.requested_goals:
                             if req_dir == Direction.RIGHT or req_dir == Direction.LEFT:
-                                return True 
+                                return True
                         else:
                             if req_dir == Direction.RIGHT:
                                 return True
-                    elif self.highways_info[agent_pos[1], agent_pos[0]+1] == HighwayDirection.NULL:
-                        if (agent_pos[1], agent_pos[0]-1) in self.requested_goals:
+                    elif (
+                        self.highways_info[agent_pos[1], agent_pos[0] + 1]
+                        == HighwayDirection.NULL
+                    ):
+                        if (agent_pos[1], agent_pos[0] - 1) in self.requested_goals:
                             if req_dir == Direction.UP or req_dir == Direction.RIGHT:
-                                return True 
+                                return True
                         else:
                             if req_dir == Direction.UP:
                                 return True
-                elif agent_pos[1]-1 < 0:
-                    if self.highways_info[agent_pos[1], agent_pos[0]+1] == HighwayDirection.NULL:
-                        if (agent_pos[1], agent_pos[0]+1) in self.requested_goals:
+                elif agent_pos[1] - 1 < 0:
+                    if (
+                        self.highways_info[agent_pos[1], agent_pos[0] + 1]
+                        == HighwayDirection.NULL
+                    ):
+                        if (agent_pos[1], agent_pos[0] + 1) in self.requested_goals:
                             if req_dir == Direction.LEFT or req_dir == Direction.RIGHT:
-                                return True 
+                                return True
                         else:
                             if req_dir == Direction.LEFT:
                                 return True
-                    elif self.highways_info[agent_pos[1], agent_pos[0]-1] == HighwayDirection.NULL:
-                        if (agent_pos[1], agent_pos[0]-1) in self.requested_goals:
+                    elif (
+                        self.highways_info[agent_pos[1], agent_pos[0] - 1]
+                        == HighwayDirection.NULL
+                    ):
+                        if (agent_pos[1], agent_pos[0] - 1) in self.requested_goals:
                             if req_dir == Direction.DOWN or req_dir == Direction.LEFT:
-                                return True 
+                                return True
                         else:
                             if req_dir == Direction.DOWN:
                                 return True
-                elif agent_pos[0]+1 > self.grid_size[1] - 1:
-                    if self.highways_info[agent_pos[1]+1, agent_pos[0]] == HighwayDirection.NULL:
-                        if (agent_pos[1]+1, agent_pos[0]) in self.requested_goals:
+                elif agent_pos[0] + 1 > self.grid_size[1] - 1:
+                    if (
+                        self.highways_info[agent_pos[1] + 1, agent_pos[0]]
+                        == HighwayDirection.NULL
+                    ):
+                        if (agent_pos[1] + 1, agent_pos[0]) in self.requested_goals:
                             if req_dir == Direction.UP or req_dir == Direction.DOWN:
-                                return True 
+                                return True
                         else:
                             if req_dir == Direction.UP:
                                 return True
-                    elif self.highways_info[agent_pos[1]-1, agent_pos[0]] == HighwayDirection.NULL:
-                        if (agent_pos[1]-1, agent_pos[0]) in self.requested_goals:
+                    elif (
+                        self.highways_info[agent_pos[1] - 1, agent_pos[0]]
+                        == HighwayDirection.NULL
+                    ):
+                        if (agent_pos[1] - 1, agent_pos[0]) in self.requested_goals:
                             if req_dir == Direction.RIGHT or req_dir == Direction.UP:
-                                return True 
+                                return True
                         else:
                             if req_dir == Direction.RIGHT:
                                 return True
-                elif agent_pos[0]-1 < 0:
-                    if self.highways_info[agent_pos[1]-1, agent_pos[0]] == HighwayDirection.NULL:
-                        if (agent_pos[1]+1, agent_pos[0]) in self.requested_goals:
+                elif agent_pos[0] - 1 < 0:
+                    if (
+                        self.highways_info[agent_pos[1] - 1, agent_pos[0]]
+                        == HighwayDirection.NULL
+                    ):
+                        if (agent_pos[1] + 1, agent_pos[0]) in self.requested_goals:
                             if req_dir == Direction.DOWN or req_dir == Direction.UP:
-                                return True 
+                                return True
                         else:
                             if req_dir == Direction.DOWN:
                                 return True
-                    elif self.highways_info[agent_pos[1]+1, agent_pos[0]] == HighwayDirection.NULL:
-                        if (agent_pos[1]-1, agent_pos[0]) in self.requested_goals:
+                    elif (
+                        self.highways_info[agent_pos[1] + 1, agent_pos[0]]
+                        == HighwayDirection.NULL
+                    ):
+                        if (agent_pos[1] - 1, agent_pos[0]) in self.requested_goals:
                             if req_dir == Direction.RIGHT or req_dir == Direction.DOWN:
-                                return True 
+                                return True
                         else:
                             if req_dir == Direction.RIGHT:
                                 return True
                 return False
-        return True 
-    
+        return True
+
     def _is_possible_pos(self, start: tuple, target: tuple) -> bool:
         if self.highways_info[start[1], start[0]] == HighwayDirection.UP:
-            if (self.highways_info[target[1], target[0]] == HighwayDirection.DOWN
-                or self.highways_info[target[1], target[0]] == HighwayDirection.LEFT):
+            if (
+                self.highways_info[target[1], target[0]] == HighwayDirection.DOWN
+                or self.highways_info[target[1], target[0]] == HighwayDirection.LEFT
+            ):
                 return False
         elif self.highways_info[start[1], start[0]] == HighwayDirection.DOWN:
-            if (self.highways_info[target[1], target[0]] == HighwayDirection.UP
-                or self.highways_info[target[1], target[0]] == HighwayDirection.RIGHT):
+            if (
+                self.highways_info[target[1], target[0]] == HighwayDirection.UP
+                or self.highways_info[target[1], target[0]] == HighwayDirection.RIGHT
+            ):
                 return False
         elif self.highways_info[start[1], start[0]] == HighwayDirection.LEFT:
-            if (self.highways_info[target[1], target[0]] == HighwayDirection.RIGHT
-                or self.highways_info[target[1], target[0]] == HighwayDirection.DOWN):
+            if (
+                self.highways_info[target[1], target[0]] == HighwayDirection.RIGHT
+                or self.highways_info[target[1], target[0]] == HighwayDirection.DOWN
+            ):
                 return False
         elif self.highways_info[start[1], start[0]] == HighwayDirection.RIGHT:
-            if (self.highways_info[target[1], target[0]] == HighwayDirection.LEFT
-                or self.highways_info[target[1], target[0]] == HighwayDirection.UP):
+            if (
+                self.highways_info[target[1], target[0]] == HighwayDirection.LEFT
+                or self.highways_info[target[1], target[0]] == HighwayDirection.UP
+            ):
                 return False
-        return True 
-        
+        return True
+
     def step(
         self, actions: List[Action]
     ) -> Tuple[List[np.ndarray], List[float], List[bool], Dict]:
@@ -1085,8 +1185,10 @@ class Warehouse(gym.Env):
                 agent.message[:] = action[1:]
             else:
                 agent.req_action = Action(action)
-        
-        _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
+
+        _unselected_goals = [
+            goal for goal in self.goal_candidates if goal not in self.requested_goals
+        ]
         for _u_goals in _unselected_goals:
             if not self.grid[_LAYER_AGENTS, _u_goals[1], _u_goals[0]]:
                 self.highways[_u_goals[1], _u_goals[0]] = 0
@@ -1120,11 +1222,13 @@ class Warehouse(gym.Env):
                 # this movement can succeed. Cancel it.
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
-            
+
             elif (
                 # check if requested direction is possible
                 not agent.req_action == Action.FORWARD
-                and not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.req_direction(), start)
+                and not self._is_possible_dir(
+                    self.highways_info[agent.y, agent.x], agent.req_direction(), start
+                )
             ):
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
@@ -1132,15 +1236,15 @@ class Warehouse(gym.Env):
                 # check if target position is possible to go when action==Forward:
                 agent.req_action == Action.FORWARD
                 and (
-                    not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.dir, start)
+                    not self._is_possible_dir(
+                        self.highways_info[agent.y, agent.x], agent.dir, start
+                    )
                     or not self._is_possible_pos(start, target)
                 )
             ):
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
-            elif (
-                not self._is_highway(target[0], target[1])
-            ):
+            elif not self._is_highway(target[0], target[1]):
                 # start, goal candidiates are all on the highway
                 # agent can't move outside of highway
                 agent.req_action = Action.NOOP
@@ -1148,7 +1252,7 @@ class Warehouse(gym.Env):
             else:
                 G.add_edge(start, target)
 
-        wcomps= [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
+        wcomps = [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
 
         for comp in wcomps:
             try:
@@ -1165,7 +1269,6 @@ class Warehouse(gym.Env):
                     if agent_id > 0:
                         commited_agents.add(agent_id)
             except nx.NetworkXNoCycle:
-
                 longest_path = nx.algorithms.dag_longest_path(comp)
                 for x, y in longest_path:
                     agent_id = self.grid[_LAYER_AGENTS, y, x]
@@ -1185,11 +1288,13 @@ class Warehouse(gym.Env):
             agent.prev_x, agent.prev_y = agent.x, agent.y
 
             if agent.req_action == Action.FORWARD:
-                agent.x, agent.y = agent.req_location(self.grid_size) # TODO: move agent by method 
+                agent.x, agent.y = agent.req_location(
+                    self.grid_size
+                )  # TODO: move agent by method
                 # if agent.carrying_shelf:
                 #     agent.carrying_shelf.x, agent.carrying_shelf.y = agent.x, agent.y
                 if agent.carrying_package():
-                    agent.move_container() # This method could be inside agent's 'move' method 
+                    agent.move_container()  # This method could be inside agent's 'move' method
             elif agent.req_action in [Action.LEFT, Action.RIGHT]:
                 agent.dir = agent.req_direction()
             # elif agent.req_action == Action.TOGGLE_LOAD and not agent.carrying_shelf:
@@ -1197,22 +1302,22 @@ class Warehouse(gym.Env):
             #     if shelf_id:
             #         agent.carrying_shelf = self.shelfs[shelf_id - 1]
             elif (
-                agent.req_action == Action.TOGGLE_LOAD and
-                agent.container.count_packages() < self.package_carrying_capacity_per_agent and
-                self._is_start_pose_with_package(agent.x, agent.y)
-                ):
+                agent.req_action == Action.TOGGLE_LOAD
+                and agent.container.count_packages()
+                < self.package_carrying_capacity_per_agent
+                and self._is_start_pose_with_package(agent.x, agent.y)
+            ):
                 # implement loading
                 # if agent is in start position with requested package, load package
                 loaded_package = self._load_package_from_stat_pose(agent.x, agent.y)
                 agent.container.load(loaded_package)
-            # deprecate shelf returning            
+            # deprecate shelf returning
             # elif agent.req_action == Action.TOGGLE_LOAD and agent.carrying_shelf:
             #     if not self._is_highway(agent.x, agent.y):
             #         agent.carrying_shelf = None
             #         if agent.has_delivered and self.reward_type == RewardType.TWO_STAGE:
             #             rewards[agent.id - 1] += 0.5
             #         agent.has_delivered = False
-
 
         self._recalc_grid()
 
@@ -1228,11 +1333,10 @@ class Warehouse(gym.Env):
             # TODO: maybe change gridmap[_LAYER_AGENT] to incorporate multiple agent at same sell
             # NOTE: assume grid[_LAYER_AGENTS] represents one of agent id at the same cell
             # only one agent can occupy goal_pose
-            agent_id =self.grid[_LAYER_AGENTS, x, y]
+            agent_id = self.grid[_LAYER_AGENTS, x, y]
             if not agent_id:
                 continue
-            agent = self.agents[agent_id -1]
-
+            agent = self.agents[agent_id - 1]
 
             # if shelf not in self.request_queue:
             #     continue
@@ -1257,7 +1361,6 @@ class Warehouse(gym.Env):
             agent.container.unload()
             # delete goal and create new one
             self._replace_goal(y, x)
-
 
             # also reward the agents
             if self.reward_type == RewardType.GLOBAL:
@@ -1302,13 +1405,27 @@ class Warehouse(gym.Env):
 
     def seed(self, seed=None):
         ...
-    
+
 
 if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
     from layout import layout_smallstreet, layout_2way, layout_2way_simple
-    env = Warehouse(9, 8, 3, 30, 3, 10, 30, None, None, RewardType.GLOBAL, layout=layout_2way, render_size="small")
+
+    env = Warehouse(
+        9,
+        8,
+        3,
+        30,
+        3,
+        10,
+        30,
+        None,
+        None,
+        RewardType.GLOBAL,
+        layout=layout_2way,
+        render_size="small",
+    )
     # env = Warehouse(9, 8, 3, 3, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple, render_size="big")
     env.reset()
     import time

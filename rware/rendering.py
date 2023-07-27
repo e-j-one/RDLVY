@@ -60,29 +60,28 @@ _DARKNAVY = (19, 39, 85)
 _LIGHTGERY = (192, 192, 192)
 
 _BACKGROUND_COLOR = _WHITE
-_GRID_COLOR = _LIGHTGERY #_BLACK
-_SHELF_COLOR = _GREY#_DARKSLATEBLUE
-_SHELF_REQ_COLOR =  (154, 0, 76)#_TEAL
+_GRID_COLOR = _LIGHTGERY  # _BLACK
+_SHELF_COLOR = _GREY  # _DARKSLATEBLUE
+_SHELF_REQ_COLOR = (154, 0, 76)  # _TEAL
 _AGENT_COLOR = _DARKORANGE
 _AGENT_LOADED_COLOR = _RED
-_AGENT_WITH_PACKAGE_3= (153, 0, 76)  #(255, 0, 90)
-_AGENT_WITH_PACKAGE_2= (255, 51, 153) #(180, 0, 60)
-_AGENT_WITH_PACKAGE_1= (255, 204, 229) #(120, 0, 30)
+_AGENT_WITH_PACKAGE_3 = (153, 0, 76)  # (255, 0, 90)
+_AGENT_WITH_PACKAGE_2 = (255, 51, 153)  # (180, 0, 60)
+_AGENT_WITH_PACKAGE_1 = (255, 204, 229)  # (120, 0, 30)
 _AGENT_DIR_COLOR = _BLACK
 # _GOAL_COLOR = (60, 60, 60)
-_GOAL_COLOR = (102, 102, 255) #(102, 255, 178)#_GREEN
+_GOAL_COLOR = (102, 102, 255)  # (102, 255, 178)#_GREEN
 
-_START_CANDIDATE_COLOR = (255, 204, 204)#(80, 0, 0)
-_REQUESTED_PACKAGE_COLOR =  (255, 0, 127)# (200, 0, 0)
-_GOAL_CANDIDATE_COLOR = _GREY #(60, 50, 120)
+_START_CANDIDATE_COLOR = (255, 204, 204)  # (80, 0, 0)
+_REQUESTED_PACKAGE_COLOR = (255, 0, 127)  # (200, 0, 0)
+_GOAL_CANDIDATE_COLOR = _GREY  # (60, 50, 120)
 # _PACKAGE_COLOR = _DARKSLATEBLUE
 # _PACKAGE_REQ_COLOR = _TEAL
 
 _START_CAND_PADDING = 0
 _GOAL_CAND_PADDING = 0.8
-_SHELF_PADDING = 0.8 
+_SHELF_PADDING = 0.8
 _PACKAGE_PADDING = 2
-
 
 
 def get_display(spec):
@@ -107,8 +106,8 @@ class Viewer(object):
         display = get_display(None)
         self.rows, self.cols = world_size
 
-        self.grid_size = 30 if render_size=="big" else 16
-        self.icon_size = 20 if render_size=="big" else 15
+        self.grid_size = 30 if render_size == "big" else 16
+        self.icon_size = 20 if render_size == "big" else 15
 
         self.width = 1 + self.cols * (self.grid_size + 1)
         self.height = 1 + self.rows * (self.grid_size + 1)
@@ -255,7 +254,7 @@ class Viewer(object):
                 ("c3B", 4 * _GOAL_COLOR),
             )
         batch.draw()
-    
+
     def _draw_goal_candidates(self, env):
         batch = pyglet.graphics.Batch()
 
@@ -346,7 +345,6 @@ class Viewer(object):
         resolution = 6
 
         for agent in env.agents:
-
             col, row = agent.x, agent.y
             row = self.rows - row - 1  # pyglet rendering is reversed
 
@@ -384,7 +382,6 @@ class Viewer(object):
             circle.draw(GL_POLYGON)
 
         for agent in env.agents:
-
             col, row = agent.x, agent.y
             row = self.rows - row - 1  # pyglet rendering is reversed
 
