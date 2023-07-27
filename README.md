@@ -1,9 +1,48 @@
 # RDLVY
-from RWARE
+from RWARE https://github.com/semitable/robotic-warehouse
 
+## WorkFlow
+Git Workflow: Fork & Pull Request
+Formatter: Use black
 
+## Env Description
+시작 지점 (물류창고) & package
+- 다수의 시작 지점에서 n개의 package가 생성
+- 한 개의 시작 지점에 여러개의 package 존재 가능
+- 각 pacakge는 모적지가 지정되어 있지 않음
 
+목적지 (배달지)
+- n개의 목적지(배달지) 생성
+- 목적지에 package를 가진 agent가 도착하면 리워드 생성
+  - 해당 목적지는 없어지며 새로운 목적지 생성
 
+Agent
+- Agent들이 시작지점에서 package를 load 후 목적지에 배달
+- Agent는 여러개의 package를 담을 수 있음
+
+이동 규칙
+- TODO:
+
+### Package
+1. start에서 여러개의 package를 생성
+- Package를 담는 request_queue 생성
+    - start_candidate 중 하나의 위치에서 생성된 pacakge가 request_queue에 추가됨
+    - 같은 위치에 여러개의 package가 생성되어 queue에 추가 가능
+    - request_queue는 shelf 사용 시와 달리 start 점에서 package가 agent에 load되면 해당 package가 queue에서 빠짐
+    - package가 goal에 도착 시 request_queue에 새로운 package 추가
+- starts_with_package_grid 추가
+    - 2D girdmap으로 각 cell은 시작 점에 쌓인 package 수를 나타냄
+    - obs에 start 점에서 기다리는 pacakge의 위치를 알려주기 위해 생성
+2. goal 구현
+- goal은 goal_candidates 중에 무작위로 생성
+- goal에 agent가 도착하면 package를 가지고 있을 시 자동으로 package 하나를 unload
+    - 새로운 goal 생성되고 배달 완료된 goal 없어짐
+
+### HighWay Rules
+TODO:
+
+## Observations
+TODO:
 
 
 <p align="center">
