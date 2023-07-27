@@ -341,7 +341,7 @@ class Viewer(object):
         agents = []
         batch = pyglet.graphics.Batch()
 
-        radius = self.grid_size / 2#3
+        radius = self.grid_size / 2.5#3
 
         resolution = 6
 

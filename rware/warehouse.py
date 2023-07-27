@@ -927,7 +927,23 @@ class Warehouse(gym.Env):
         
         return num_nearby_ALL, num_nearby_NULL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT
 
-    def _is_possible_dir(self, highway_dir: HighwayDirection, req_dir:Direction, agent_pos: tuple, agent_dir: Direction) -> bool:
+    # for intersection type 1...
+    # Intersection type 1:
+    # ex) xxxxduxxxx
+    #    xll(.)uxxxxx
+    #     xxxr.xxxxx
+    #    the () point
+    # cannot decide where to go with only cross information.
+    # Need to find where the wall is.
+    def _check_corner(self, pos):
+        assert self.highways_info[pos[1], pos[0]] == HighwayDirection.ALL
+        for i, j in zip([1, 1, -1, -1], [1, -1 ,1, -1]):
+            if self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.NULL:
+                return (j, i)
+        AssertionError("The position is not an intersection type 1.")
+
+            
+    def _is_possible_dir(self, highway_dir: HighwayDirection, req_dir:Direction, agent_pos: tuple) -> bool:
         if highway_dir == HighwayDirection.UP:
             if req_dir == Direction.DOWN or req_dir==Direction.LEFT:
                 return False
@@ -958,25 +974,24 @@ class Warehouse(gym.Env):
                 return False 
             # when the number of possible direction is 1
             elif n_NULL == 0:
-                print("check intersection 1")
-                print(n_ALL, n_NULL, n_UP, n_DOWN, n_LEFT, n_RIGHT)
-                print(agent_dir)
-                # time.sleep(10000)
-                if agent_dir == Direction.UP:
+                if self._check_corner(agent_pos) == (1, 1):
+                    # the corner is at the botton-right
                     if req_dir == Direction.RIGHT: return True
-                elif agent_dir == Direction.DOWN:
-                    if req_dir == Direction.LEFT: return True
-                elif agent_dir == Direction.LEFT:
+                elif self._check_corner(agent_pos) == (1, -1):
+                    # up-right
                     if req_dir == Direction.UP: return True
-                elif agent_dir == Direction.RIGHT:
+                elif self._check_corner(agent_pos) == (-1, 1):
+                    # bottom-left
                     if req_dir == Direction.DOWN: return True
+                elif self._check_corner(agent_pos) == (-1, -1):
+                    # up-left
+                    if req_dir == Direction.LEFT: return True
                 return False
             # u-turn points
+            # TODO: Apply below code for explicit u-turn point
             elif n_NULL == 1:
                 if agent_pos[1]+1 > self.grid_size[0] - 1:
-                    print("1")
                     if self.highways_info[agent_pos[1], agent_pos[0]-1] == HighwayDirection.NULL:
-                        print("1.1")
                         if (agent_pos[1], agent_pos[0]+1) in self.requested_goals:
                             if req_dir == Direction.RIGHT or req_dir == Direction.LEFT:
                                 return True 
@@ -984,7 +999,6 @@ class Warehouse(gym.Env):
                             if req_dir == Direction.RIGHT:
                                 return True
                     elif self.highways_info[agent_pos[1], agent_pos[0]+1] == HighwayDirection.NULL:
-                        print("1.2")
                         if (agent_pos[1], agent_pos[0]-1) in self.requested_goals:
                             if req_dir == Direction.UP or req_dir == Direction.RIGHT:
                                 return True 
@@ -992,9 +1006,7 @@ class Warehouse(gym.Env):
                             if req_dir == Direction.UP:
                                 return True
                 elif agent_pos[1]-1 < 0:
-                    print("2")
                     if self.highways_info[agent_pos[1], agent_pos[0]+1] == HighwayDirection.NULL:
-                        print("2.1")
                         if (agent_pos[1], agent_pos[0]+1) in self.requested_goals:
                             if req_dir == Direction.LEFT or req_dir == Direction.RIGHT:
                                 return True 
@@ -1002,7 +1014,6 @@ class Warehouse(gym.Env):
                             if req_dir == Direction.LEFT:
                                 return True
                     elif self.highways_info[agent_pos[1], agent_pos[0]-1] == HighwayDirection.NULL:
-                        print("2.2")
                         if (agent_pos[1], agent_pos[0]-1) in self.requested_goals:
                             if req_dir == Direction.DOWN or req_dir == Direction.LEFT:
                                 return True 
@@ -1010,9 +1021,7 @@ class Warehouse(gym.Env):
                             if req_dir == Direction.DOWN:
                                 return True
                 elif agent_pos[0]+1 > self.grid_size[1] - 1:
-                    print("3")
                     if self.highways_info[agent_pos[1]+1, agent_pos[0]] == HighwayDirection.NULL:
-                        print("3.1")
                         if (agent_pos[1]+1, agent_pos[0]) in self.requested_goals:
                             if req_dir == Direction.UP or req_dir == Direction.DOWN:
                                 return True 
@@ -1020,7 +1029,6 @@ class Warehouse(gym.Env):
                             if req_dir == Direction.UP:
                                 return True
                     elif self.highways_info[agent_pos[1]-1, agent_pos[0]] == HighwayDirection.NULL:
-                        print("3.2")
                         if (agent_pos[1]-1, agent_pos[0]) in self.requested_goals:
                             if req_dir == Direction.RIGHT or req_dir == Direction.UP:
                                 return True 
@@ -1028,9 +1036,7 @@ class Warehouse(gym.Env):
                             if req_dir == Direction.RIGHT:
                                 return True
                 elif agent_pos[0]-1 < 0:
-                    print("4")
                     if self.highways_info[agent_pos[1]-1, agent_pos[0]] == HighwayDirection.NULL:
-                        print("4.1")
                         if (agent_pos[1]+1, agent_pos[0]) in self.requested_goals:
                             if req_dir == Direction.DOWN or req_dir == Direction.UP:
                                 return True 
@@ -1038,7 +1044,6 @@ class Warehouse(gym.Env):
                             if req_dir == Direction.DOWN:
                                 return True
                     elif self.highways_info[agent_pos[1]+1, agent_pos[0]] == HighwayDirection.NULL:
-                        print("4.2")
                         if (agent_pos[1]-1, agent_pos[0]) in self.requested_goals:
                             if req_dir == Direction.RIGHT or req_dir == Direction.DOWN:
                                 return True 
@@ -1117,14 +1122,17 @@ class Warehouse(gym.Env):
             elif (
                 # check if requested direction is possible
                 not agent.req_action == Action.FORWARD
-                and not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.req_direction(), start, agent.dir)
+                and not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.req_direction(), start)
             ):
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
             elif (
                 # check if target position is possible to go when action==Forward:
                 agent.req_action == Action.FORWARD
-                and not self._is_possible_pos(start, target)
+                and (
+                    not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.dir, start)
+                    or not self._is_possible_pos(start, target)
+                )
             ):
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
@@ -1299,7 +1307,7 @@ if __name__ == "__main__":
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
     from layout import layout_smallstreet, layout_2way, layout_2way_simple
     # env = Warehouse(9, 8, 3, 30, 3, 10, 30, None, None, RewardType.GLOBAL, layout=layout_2way)
-    env = Warehouse(9, 8, 3, 1, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
+    env = Warehouse(9, 8, 3, 3, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
     env.reset()
     import time
     from tqdm import tqdm
