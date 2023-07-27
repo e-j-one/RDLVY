@@ -54,10 +54,10 @@ class Direction(Enum):
     RIGHT = 3
 
 class HighwayDirection(Enum):
-    DOWN = 0
-    UP = 1
-    RIGHT = 2
-    LEFT = 3
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
     ALL = 4
     NULL = 5
 
@@ -400,7 +400,7 @@ class Warehouse(gym.Env):
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
         self.requested_package_grid = np.zeros(self.grid_size, dtype=np.int32)
         self.highways = np.zeros(self.grid_size, dtype=np.int32)
-        self.highways_info = np.zeros(self.highways.shape, dtype=np.int32) + HighwayDirection.NULL.value
+        self.highways_info = np.array([HighwayDirection.NULL for _ in range(self.grid_size[0]*self.grid_size[1])]).reshape(self.grid_size)
 
         # start point where packages are waiting
         # cell indicates number of packages waiting
@@ -413,26 +413,26 @@ class Warehouse(gym.Env):
                     # self.goals.append((x, y))
                     self.goal_candidates.append((x, y))
                     self.highways[y, x] = 1
-                    self.highways_info[y, x] = HighwayDirection.ALL.value
+                    self.highways_info[y, x] = HighwayDirection.ALL
                 elif char.lower() == ".":
                     self.highways[y, x] = 1
-                    self.highways_info[y, x] = HighwayDirection.ALL.value
+                    self.highways_info[y, x] = HighwayDirection.ALL
                 elif char.lower() == "s":
                     self.start_candidates.append((x,y))
                     self.highways[y, x] = 1
-                    self.highways_info[y, x] = HighwayDirection.ALL.value
+                    self.highways_info[y, x] = HighwayDirection.ALL
                 elif char.lower() == "r":
                     self.highways[y, x] = 1
-                    self.highways_info[y, x] = HighwayDirection.RIGHT.value
+                    self.highways_info[y, x] = HighwayDirection.RIGHT
                 elif char.lower() == "l":
                     self.highways[y, x] = 1
-                    self.highways_info[y, x] = HighwayDirection.LEFT.value
+                    self.highways_info[y, x] = HighwayDirection.LEFT
                 elif char.lower() == "d":
                     self.highways[y, x] = 1
-                    self.highways_info[y, x] = HighwayDirection.DOWN.value
+                    self.highways_info[y, x] = HighwayDirection.DOWN
                 elif char.lower() == "u":
                     self.highways[y, x] = 1
-                    self.highways_info[y, x] = HighwayDirection.UP.value
+                    self.highways_info[y, x] = HighwayDirection.UP
 
         assert len(self.goal_candidates) >= 1, "At least one goal is required"
 
@@ -826,11 +826,11 @@ class Warehouse(gym.Env):
             np.indices(self.grid_size)[0].reshape(-1),
             np.indices(self.grid_size)[1].reshape(-1),
         ):
-            if not self.highways_info[y, x] == HighwayDirection.NULL.value:
+            if not self.highways_info[y, x] == HighwayDirection.NULL:
                 if y == self.grid_size[0]-1 or x==self.grid_size[1]-1:
-                    self.highways_info[y, x] = HighwayDirection.ALL.value
+                    self.highways_info[y, x] = HighwayDirection.ALL
                 elif y == 0 or x == 0:
-                    self.highways_info[y, x] = HighwayDirection.ALL.value
+                    self.highways_info[y, x] = HighwayDirection.ALL
 
         # self.request_queue = list(
         #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
@@ -890,9 +890,50 @@ class Warehouse(gym.Env):
         self.highways[_new_goal[1], _new_goal[0]] = 1
         self.requested_goals.append(_new_goal)
 
-    def _is_opposite(self, dir1, dir2):
+    def _is_possible_dir(self, highway_dir: HighwayDirection, agent_dir:Direction) -> bool:
+        if highway_dir == HighwayDirection.UP:
+            if agent_dir == Direction.UP or agent_dir==Direction.RIGHT:
+                return True
+        elif highway_dir == HighwayDirection.DOWN:
+            if agent_dir == Direction.DOWN or agent_dir==Direction.LEFT:
+                return True
+        elif highway_dir == HighwayDirection.LEFT:
+            if agent_dir == Direction.LEFT or agent_dir==Direction.UP:
+                return True
+        elif highway_dir == HighwayDirection.RIGHT:
+            if agent_dir == Direction.RIGHT or agent_dir==Direction.DOWN:
+                return True
+        elif highway_dir == HighwayDirection.INTERSECTION1:
+            pass
+        elif highway_dir == HighwayDirection.INTERSECTION2:
+            pass
+        elif highway_dir == HighwayDirection.ALL:
+            return True
+        return False 
+    
+    def _is_possible_pos(self, start: tuple, target: tuple) -> bool:
+        if self.highways_info[start[1], start[0]] == HighwayDirection.UP:
+            if (self.highways_info[target[1], target[0]] == HighwayDirection.DOWN
+                or self.highways_info[target[1], target[0]] == HighwayDirection.LEFT):
+                return False
+        elif self.highways_info[start[1], start[0]] == HighwayDirection.DOWN:
+            if (self.highways_info[target[1], target[0]] == HighwayDirection.UP
+                or self.highways_info[target[1], target[0]] == HighwayDirection.RIGHT):
+                return False
+        elif self.highways_info[start[1], start[0]] == HighwayDirection.LEFT:
+            if (self.highways_info[target[1], target[0]] == HighwayDirection.RIGHT
+                or self.highways_info[target[1], target[0]] == HighwayDirection.UP):
+                return False
+        elif self.highways_info[start[1], start[0]] == HighwayDirection.RIGHT:
+            if (self.highways_info[target[1], target[0]] == HighwayDirection.LEFT
+                or self.highways_info[target[1], target[0]] == HighwayDirection.DOWN):
+                return False
+        elif self.highways_info[start[1], start[0]] == HighwayDirection.INTERSECTION1:
+            pass
+        elif self.highways_info[start[1], start[0]] == HighwayDirection.INTERSECTION2:
+            pass
+        return True 
         
-
     def step(
         self, actions: List[Action]
     ) -> Tuple[List[np.ndarray], List[float], List[bool], Dict]:
@@ -940,24 +981,16 @@ class Warehouse(gym.Env):
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
             elif (
-                not(
-                    self.highways_info[agent.y, agent.x] == HighwayDirection.ALL.value
-                    or self.highways_info[target[1], target[0]] == HighwayDirection.ALL.value
-                ) 
-                and not (
-                    self.highways_info[target[1], target[0]] == self.highways_info[agent.y, agent.x]
-                )
+                # check if target position is possible to go when action==Forward:
+                agent.req_action == Action.FORWARD
+                and not self._is_possible_pos(start, target)
             ):
-                # if centerline violation occur where
-                # the current position is not an intersection point, cancel it
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
             elif (
-                agent.req_direction().value == self.highways_info[target[1], target[0]]
-                or agent.dir.value == self.highways_info[target[1], target[0]]
+                # check if requested direction is possible
+                not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.req_direction())
             ):
-                # if the requested direction of the agent
-                # is opposite to the road direction, cancel it.
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
             elif (
