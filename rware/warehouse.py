@@ -890,6 +890,9 @@ class Warehouse(gym.Env):
         self.highways[_new_goal[1], _new_goal[0]] = 1
         self.requested_goals.append(_new_goal)
 
+    def _is_opposite(self, dir1, dir2):
+        
+
     def step(
         self, actions: List[Action]
     ) -> Tuple[List[np.ndarray], List[float], List[bool], Dict]:
@@ -941,7 +944,9 @@ class Warehouse(gym.Env):
                     self.highways_info[agent.y, agent.x] == HighwayDirection.ALL.value
                     or self.highways_info[target[1], target[0]] == HighwayDirection.ALL.value
                 ) 
-                and (self.highways_info[target[1], target[0]] + self.highways_info[agent.y, agent.x]) % 4 == 1
+                and not (
+                    self.highways_info[target[1], target[0]] == self.highways_info[agent.y, agent.x]
+                )
             ):
                 # if centerline violation occur where
                 # the current position is not an intersection point, cancel it
@@ -949,6 +954,7 @@ class Warehouse(gym.Env):
                 G.add_edge(start, start)
             elif (
                 agent.req_direction().value == self.highways_info[target[1], target[0]]
+                or agent.dir.value == self.highways_info[target[1], target[0]]
             ):
                 # if the requested direction of the agent
                 # is opposite to the road direction, cancel it.
@@ -1124,7 +1130,8 @@ if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
     from layout import layout_smallstreet, layout_2way, layout_2way_simple
-    env = Warehouse(9, 8, 3, 3, 3, 8, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
+    # env = Warehouse(9, 8, 3, 30, 3, 10, 30, None, None, RewardType.GLOBAL, layout=layout_2way)
+    env = Warehouse(9, 8, 3, 3, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
     env.reset()
     import time
     from tqdm import tqdm
