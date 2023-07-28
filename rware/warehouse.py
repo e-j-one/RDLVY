@@ -143,7 +143,7 @@ class Agent(Entity):
         self.dir = dir_
         self.message = np.zeros(msg_bits)
         self.req_action: Optional[Action] = None
-        self.carrying_shelf: Optional[Shelf] = None
+        # self.carrying_shelf: Optional[Shelf] = None
         self.canceled_action = None
         self.has_delivered = False
 
@@ -962,16 +962,16 @@ class Warehouse(gym.Env):
             # when the number of possible direction is 3 (except the direction where the agent comes from)
             if n_NULL == 2:
                 if n_UP * n_LEFT: 
-                    if req_dir == Direction.LEFT: return True
+                    if req_dir == Direction.DOWN: return False
                 elif n_DOWN * n_RIGHT:
-                    if req_dir == Direction.RIGHT: return True
+                    if req_dir == Direction.UP: return False
                 elif n_LEFT * n_DOWN:
-                    if req_dir == Direction.DOWN: return True
+                    if req_dir == Direction.RIGHT: return False
                 elif n_RIGHT * n_UP:
-                    if req_dir == Direction.UP: return True
+                    if req_dir == Direction.LEFT: return False
                 else:
                     AssertionError("Somethings wrong in layout. Check the intersection_3 part.")
-                return False 
+                return True 
             # Intersection type 1
             # when the number of possible direction is 1
             elif n_NULL == 0:
@@ -1083,31 +1083,24 @@ class Warehouse(gym.Env):
             start = agent.x, agent.y
             target = agent.req_location(self.grid_size)
 
+            # shelf is deprecated
+            # if (
+            #     agent.carrying_shelf
+            #     and start != target
+            #     and self.grid[_LAYER_SHELFS, target[1], target[0]]
+            #     and not (
+            #         self.grid[_LAYER_AGENTS, target[1], target[0]]
+            #         and self.agents[
+            #             self.grid[_LAYER_AGENTS, target[1], target[0]] - 1
+            #         ].carrying_shelf
+            #     )
+            # ):
+            #     # there's a standing shelf at the target location
+            #     # our agent is carrying a shelf so there's no way
+            #     # this movement can succeed. Cancel it.
+            #     agent.req_action = Action.NOOP
+            #     G.add_edge(start, start)
             if (
-                agent.carrying_shelf
-                and start != target
-                and self.grid[_LAYER_SHELFS, target[1], target[0]]
-                and not (
-                    self.grid[_LAYER_AGENTS, target[1], target[0]]
-                    and self.agents[
-                        self.grid[_LAYER_AGENTS, target[1], target[0]] - 1
-                    ].carrying_shelf
-                )
-            ):
-                # there's a standing shelf at the target location
-                # our agent is carrying a shelf so there's no way
-                # this movement can succeed. Cancel it.
-                agent.req_action = Action.NOOP
-                G.add_edge(start, start)
-            
-            elif (
-                # check if requested direction is possible
-                not agent.req_action == Action.FORWARD
-                and not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.req_direction(), start)
-            ):
-                agent.req_action = Action.NOOP
-                G.add_edge(start, start)
-            elif (
                 # check if target position is possible to go when action==Forward:
                 agent.req_action == Action.FORWARD
                 and (
@@ -1285,9 +1278,10 @@ class Warehouse(gym.Env):
 if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
-    from layout import layout_smallstreet, layout_2way, layout_2way_simple
-    env = Warehouse(9, 8, 3, 30, 3, 10, 30, None, None, RewardType.GLOBAL, layout=layout_2way, block_size="small")
+    from layout import layout_smallstreet, layout_2way, layout_2way_simple, layout_2way_test_giuk
+    env = Warehouse(9, 8, 3, 30, 3, 10, 10, None, None, RewardType.GLOBAL, layout=layout_2way, block_size="small")
     # env = Warehouse(9, 8, 3, 4, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple, block_size="big")
+    # env = Warehouse(9, 8, 3, 10, 3, 3, 10, None, None, RewardType.GLOBAL, layout=layout_2way_test_giuk, block_size="big")
     env.reset()
     import time
     from tqdm import tqdm

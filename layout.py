@@ -69,7 +69,7 @@ xxxxxxxxxx..................................................xxxx
 """
 
 layout_2way ="""
-xxxxxxxxxxxxxxxxxxxxxxd.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxduxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxd.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxd.xxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxduxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxduxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxd.lllllllll.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxduxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxx.rrrrrrrrr.uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxduxxxxxxxx
@@ -150,6 +150,22 @@ xxxxgdugsgxxxx
 xxxxg.ugxxxxxx
 """
 
+layout_2way_test_giuk ="""
+xxxxsssssssxxxx
+xxxg.lllll.gxxx
+xgggd.rrr.ugggx
+g.ll.usssd.ll.g
+gd.rr.xxx.rr.ug
+xduxxxxxxgggdug
+xduxxxxxxxxgdug
+xduxxxxxxgggdug
+xd.ll.gxg.ll.ug
+x.rr.ugxgd.rr.g
+xxxxdugxgdugggx
+xxxxd.lll.ugxxx
+xxxx.rrrrr.gxxx
+xxxxxxxxxxxxxxx
+"""
 
 
 layout_bonxcheonstreet = """
