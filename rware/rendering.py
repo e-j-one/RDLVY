@@ -103,12 +103,12 @@ def get_display(spec):
 
 
 class Viewer(object):
-    def __init__(self, world_size):
+    def __init__(self, world_size, block_size="small"):
         display = get_display(None)
         self.rows, self.cols = world_size
 
-        self.grid_size = 30
-        self.icon_size = 20
+        self.grid_size = 16 if block_size=="small" else 30
+        self.icon_size = 15 if block_size=="small" else 20
 
         self.width = 1 + self.cols * (self.grid_size + 1)
         self.height = 1 + self.rows * (self.grid_size + 1)
