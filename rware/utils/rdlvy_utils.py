@@ -1,6 +1,6 @@
 import numpy as np
 
-def select_hightway_positions(highways, n):
+def select_highway_positions(highways, n):
     # Get the indices where gridmap is 1
     valid_indices = np.argwhere(highways == 1)
     

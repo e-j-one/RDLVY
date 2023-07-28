@@ -5,7 +5,7 @@ import gym
 from gym import spaces
 
 from rware.utils import MultiAgentActionSpace, MultiAgentObservationSpace
-from rware.utils.rdlvy_utils import select_hightway_positions
+from rware.utils.rdlvy_utils import select_highway_positions
 
 from enum import Enum
 import numpy as np
@@ -47,13 +47,19 @@ class Action(Enum):
     RIGHT = 3
     TOGGLE_LOAD = 4
 
-
 class Direction(Enum):
     UP = 0
     DOWN = 1
     LEFT = 2
     RIGHT = 3
 
+class HighwayDirection(Enum):
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
+    ALL = 4
+    NULL = 5
 
 class RewardType(Enum):
     GLOBAL = 0
@@ -223,7 +229,8 @@ class Warehouse(gym.Env):
         ],
         image_observation_directional: bool=True,
         normalised_coordinates: bool=False,
-        package_carrying_capacity_per_agent: int = 3
+        package_carrying_capacity_per_agent: int = 3,
+        block_size="small"
     ):
         """The robotic warehouse environment
 
@@ -314,6 +321,7 @@ class Warehouse(gym.Env):
         self.max_inactivity_steps: Optional[int] = max_inactivity_steps
         self.reward_type = reward_type
         self.reward_range = (0, 1)
+        self.block_size = block_size
 
         self._cur_inactive_steps = None
         self._cur_steps = 0
@@ -394,6 +402,7 @@ class Warehouse(gym.Env):
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
         self.requested_package_grid = np.zeros(self.grid_size, dtype=np.int32)
         self.highways = np.zeros(self.grid_size, dtype=np.int32)
+        self.highways_info = np.array([HighwayDirection.NULL for _ in range(self.grid_size[0]*self.grid_size[1])]).reshape(self.grid_size)
 
         # start point where packages are waiting
         # cell indicates number of packages waiting
@@ -401,16 +410,31 @@ class Warehouse(gym.Env):
 
         for y, line in enumerate(lines):
             for x, char in enumerate(line):
-                assert char.lower() in "gxs."
+                assert char.lower() in "gxsrldu."
                 if char.lower() == "g":
                     # self.goals.append((x, y))
                     self.goal_candidates.append((x, y))
                     self.highways[y, x] = 1
+                    # self.highways_info[y, x] = HighwayDirection.ALL
                 elif char.lower() == ".":
                     self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.ALL
                 elif char.lower() == "s":
                     self.start_candidates.append((x,y))
                     self.highways[y, x] = 1
+                    # self.highways_info[y, x] = HighwayDirection.ALL
+                elif char.lower() == "r":
+                    self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.RIGHT
+                elif char.lower() == "l":
+                    self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.LEFT
+                elif char.lower() == "d":
+                    self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.DOWN
+                elif char.lower() == "u":
+                    self.highways[y, x] = 1
+                    self.highways_info[y, x] = HighwayDirection.UP
 
         assert len(self.goal_candidates) >= 1, "At least one goal is required"
 
@@ -778,13 +802,21 @@ class Warehouse(gym.Env):
         self.starts_with_package_grid[_random_start_pos[1], _random_start_pos[0]] += 1
         _package = Package(_random_start_pos[0], _random_start_pos[1])
         return _package
+
+    def _print_highways_info(self):
+        for i in range(self.grid_size[0]):
+            line_info = []
+            for j in range(self.grid_size[1]):
+                line_info.append(self.highways_info[i, j].value)
+            print(line_info)
+            print()
+    
     
     def reset(self):
         Shelf.counter = 0
         Agent.counter = 0
         self._cur_inactive_steps = 0
         self._cur_steps = 0
-
         # n_xshelf = (self.grid_size[1] - 1) // 3
         # n_yshelf = (self.grid_size[0] - 2) // 9
 
@@ -798,6 +830,15 @@ class Warehouse(gym.Env):
             if not self._is_highway(x, y)
         ]
 
+        # self.request_queue = list(
+        #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
+        # )
+        self.request_queue = self._create_packages()
+        self.requested_goals = random.sample(self.goal_candidates, self.requested_goal_size)
+        _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
+        for _u_goals in _unselected_goals:
+            self.highways[_u_goals[1], _u_goals[0]] = 0
+
         # spawn agents at random locations
         # agent_locs = np.random.choice(
         #     np.arange(self.grid_size[0] * self.grid_size[1]),
@@ -805,23 +846,21 @@ class Warehouse(gym.Env):
         #     replace=False,
         # )
         # agent_locs = np.unravel_index(agent_locs, self.grid_size)
-        agent_locs = select_hightway_positions(self.highways, self.n_agents)
+        agent_locs = select_highway_positions(self.highways, self.n_agents)
         
         # and direction
         agent_dirs = np.random.choice([d for d in Direction], size=self.n_agents)
+
         self.agents = [
             Agent(x, y, dir_, self.msg_bits)
             for y, x, dir_ in zip(*agent_locs, agent_dirs)
         ]
 
         self._recalc_grid()
-
-        # self.request_queue = list(
-        #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
-        # )
-        self.request_queue = self._create_packages()
-        self.requested_goals = random.sample(self.goal_candidates, self.requested_goal_size)
-
+        
+        # Highways info update in edge points
+        # Agents can turn around in the edge of the map.
+             
         return tuple([self._make_obs(agent) for agent in self.agents])
         # for s in self.shelfs:
         #     self.grid[0, s.y, s.x] = 1
@@ -846,10 +885,174 @@ class Warehouse(gym.Env):
             if goal_pose[0] == x and goal_pose[1] == y:
                 del self.requested_goals[i]
                 break
+        
         _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
         _new_goal = random.choice(_unselected_goals)
+        self.highways[_new_goal[1], _new_goal[0]] = 1
         self.requested_goals.append(_new_goal)
 
+    def _check_nearby(self, pos):
+        num_nearby_ALL, num_nearby_NULL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT = 0, 0, 0, 0, 0, 0
+        for i, j  in zip([0, 0, 1, -1], [1, -1 ,0, 0]):
+            if (pos[1]+i > self.grid_size[0]-1 or pos[1]+i < 0):
+                i = 0
+            elif (pos[0]+j > self.grid_size[1]-1 or pos[0]+j < 0):
+                j = 0
+            # print(pos[1], i, pos[0], j)
+            if self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.ALL:
+                num_nearby_ALL += 1
+            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.NULL:
+                num_nearby_NULL += 1
+            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.UP:
+                num_nearby_UP += 1
+            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.DOWN:
+                num_nearby_DOWN += 1
+            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.LEFT:
+                num_nearby_LEFT += 1
+            elif self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.RIGHT:
+                num_nearby_RIGHT += 1
+        
+        assert num_nearby_ALL+num_nearby_NULL+num_nearby_UP+num_nearby_DOWN+num_nearby_LEFT+num_nearby_RIGHT == 4
+        
+        return num_nearby_ALL, num_nearby_NULL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT
+
+    # Intersection type 3:
+    # ex) x x x x d u x x x x
+    #     l l l l . u x x x x
+    #     r r r r r(.)x x x x
+    #     x x x x x x x x x x
+    # the () point: outer corner point of corner street.
+    #
+    # Intersection type 1:
+    # ex) x x x x d u x x x x
+    #     l l l l(.)u x x x x
+    #     r r r r r . x x x x
+    #     x x x x x x x x x x
+    # the () point: inner corner point of corner street.
+    #
+    # for intersection type 1...
+    # cannot decide where to go with only cross information.
+    # Need to find where the wall is.
+    def _check_corner(self, pos):
+        assert self.highways_info[pos[1], pos[0]] == HighwayDirection.ALL
+        for i, j in zip([1, 1, -1, -1], [1, -1 ,1, -1]):
+            if self.highways_info[pos[1]+i, pos[0]+j] == HighwayDirection.NULL:
+                return (j, i)
+        AssertionError("The position is not an intersection type 1.")
+
+    # check if the req_dir is possiple in that point of highways_info  
+    # ex) cannot see down or left on the highways_info==UP point
+    def _is_possible_dir(self, highway_dir: HighwayDirection, req_dir:Direction, agent_pos: tuple) -> bool:
+        if highway_dir == HighwayDirection.UP:
+            if req_dir == Direction.DOWN or req_dir==Direction.LEFT:
+                return False
+        elif highway_dir == HighwayDirection.DOWN:
+            if req_dir == Direction.UP or req_dir==Direction.RIGHT:
+                return False
+        elif highway_dir == HighwayDirection.LEFT:
+            if req_dir == Direction.RIGHT or req_dir==Direction.DOWN:
+                return False
+        elif highway_dir == HighwayDirection.RIGHT:
+            if req_dir == Direction.LEFT or req_dir==Direction.UP:
+                return False
+        # Intersection logic
+        elif highway_dir == HighwayDirection.ALL: 
+            n_ALL, n_NULL, n_UP, n_DOWN, n_LEFT, n_RIGHT = self._check_nearby(agent_pos)
+            # Intersection type 3
+            # when the number of possible direction is 3 (except the direction where the agent comes from)
+            if n_NULL == 2:
+                if n_UP * n_LEFT: 
+                    if req_dir == Direction.LEFT: return True
+                elif n_DOWN * n_RIGHT:
+                    if req_dir == Direction.RIGHT: return True
+                elif n_LEFT * n_DOWN:
+                    if req_dir == Direction.DOWN: return True
+                elif n_RIGHT * n_UP:
+                    if req_dir == Direction.UP: return True
+                else:
+                    AssertionError("Somethings wrong in layout. Check the intersection_3 part.")
+                return False 
+            # Intersection type 1
+            # when the number of possible direction is 1
+            elif n_NULL == 0:
+                if self._check_corner(agent_pos) == (1, 1):
+                    # the corner is at the botton-right
+                    if req_dir == Direction.RIGHT: return True
+                elif self._check_corner(agent_pos) == (1, -1):
+                    # up-right
+                    if req_dir == Direction.UP: return True
+                elif self._check_corner(agent_pos) == (-1, 1):
+                    # bottom-left
+                    if req_dir == Direction.DOWN: return True
+                elif self._check_corner(agent_pos) == (-1, -1):
+                    # up-left
+                    if req_dir == Direction.LEFT: return True
+                return False
+            # u-turn points (the end of road at the the edge of the layout)
+            elif n_NULL == 1:
+                if agent_pos[1]+1 > self.grid_size[0] - 1:
+                    if self.highways_info[agent_pos[1], agent_pos[0]-1] == HighwayDirection.NULL:
+                        if (agent_pos[1], agent_pos[0]+1) in self.requested_goals:
+                            if req_dir == Direction.RIGHT or req_dir == Direction.LEFT:
+                                return True 
+                        else:
+                            if req_dir == Direction.RIGHT:
+                                return True
+                    elif self.highways_info[agent_pos[1], agent_pos[0]+1] == HighwayDirection.NULL:
+                        if (agent_pos[1], agent_pos[0]-1) in self.requested_goals:
+                            if req_dir == Direction.UP or req_dir == Direction.RIGHT:
+                                return True 
+                        else:
+                            if req_dir == Direction.UP:
+                                return True
+                elif agent_pos[1]-1 < 0:
+                    if self.highways_info[agent_pos[1], agent_pos[0]+1] == HighwayDirection.NULL:
+                        if (agent_pos[1], agent_pos[0]+1) in self.requested_goals:
+                            if req_dir == Direction.LEFT or req_dir == Direction.RIGHT:
+                                return True 
+                        else:
+                            if req_dir == Direction.LEFT:
+                                return True
+                    elif self.highways_info[agent_pos[1], agent_pos[0]-1] == HighwayDirection.NULL:
+                        if (agent_pos[1], agent_pos[0]-1) in self.requested_goals:
+                            if req_dir == Direction.DOWN or req_dir == Direction.LEFT:
+                                return True 
+                        else:
+                            if req_dir == Direction.DOWN:
+                                return True
+                elif agent_pos[0]+1 > self.grid_size[1] - 1:
+                    if self.highways_info[agent_pos[1]+1, agent_pos[0]] == HighwayDirection.NULL:
+                        if (agent_pos[1]+1, agent_pos[0]) in self.requested_goals:
+                            if req_dir == Direction.UP or req_dir == Direction.DOWN:
+                                return True 
+                        else:
+                            if req_dir == Direction.UP:
+                                return True
+                    elif self.highways_info[agent_pos[1]-1, agent_pos[0]] == HighwayDirection.NULL:
+                        if (agent_pos[1]-1, agent_pos[0]) in self.requested_goals:
+                            if req_dir == Direction.RIGHT or req_dir == Direction.UP:
+                                return True 
+                        else:
+                            if req_dir == Direction.RIGHT:
+                                return True
+                elif agent_pos[0]-1 < 0:
+                    if self.highways_info[agent_pos[1]-1, agent_pos[0]] == HighwayDirection.NULL:
+                        if (agent_pos[1]+1, agent_pos[0]) in self.requested_goals:
+                            if req_dir == Direction.DOWN or req_dir == Direction.UP:
+                                return True 
+                        else:
+                            if req_dir == Direction.DOWN:
+                                return True
+                    elif self.highways_info[agent_pos[1]+1, agent_pos[0]] == HighwayDirection.NULL:
+                        if (agent_pos[1]-1, agent_pos[0]) in self.requested_goals:
+                            if req_dir == Direction.RIGHT or req_dir == Direction.DOWN:
+                                return True 
+                        else:
+                            if req_dir == Direction.RIGHT:
+                                return True
+                return False
+        return True 
+    
     def step(
         self, actions: List[Action]
     ) -> Tuple[List[np.ndarray], List[float], List[bool], Dict]:
@@ -861,6 +1064,11 @@ class Warehouse(gym.Env):
                 agent.message[:] = action[1:]
             else:
                 agent.req_action = Action(action)
+        
+        _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
+        for _u_goals in _unselected_goals:
+            if not self.grid[_LAYER_AGENTS, _u_goals[1], _u_goals[0]]:
+                self.highways[_u_goals[1], _u_goals[0]] = 0
 
         # # stationary agents will certainly stay where they are
         # stationary_agents = [agent for agent in self.agents if agent.action != Action.FORWARD]
@@ -891,6 +1099,23 @@ class Warehouse(gym.Env):
                 # this movement can succeed. Cancel it.
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
+            
+            elif (
+                # check if requested direction is possible
+                not agent.req_action == Action.FORWARD
+                and not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.req_direction(), start)
+            ):
+                agent.req_action = Action.NOOP
+                G.add_edge(start, start)
+            elif (
+                # check if target position is possible to go when action==Forward:
+                agent.req_action == Action.FORWARD
+                and (
+                    not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.dir, start)
+                )
+            ):
+                agent.req_action = Action.NOOP
+                G.add_edge(start, start)
             elif (
                 not self._is_highway(target[0], target[1])
             ):
@@ -901,7 +1126,7 @@ class Warehouse(gym.Env):
             else:
                 G.add_edge(start, target)
 
-        wcomps = [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
+        wcomps= [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
 
         for comp in wcomps:
             try:
@@ -1037,7 +1262,7 @@ class Warehouse(gym.Env):
             dones = self.n_agents * [True]
         else:
             dones = self.n_agents * [False]
-
+        
         new_obs = tuple([self._make_obs(agent) for agent in self.agents])
         info = {}
         return new_obs, list(rewards), dones, info
@@ -1046,7 +1271,7 @@ class Warehouse(gym.Env):
         if not self.renderer:
             from rware.rendering import Viewer
 
-            self.renderer = Viewer(self.grid_size)
+            self.renderer = Viewer(self.grid_size, self.block_size)
         return self.renderer.render(self, return_rgb_array=mode == "rgb_array")
 
     def close(self):
@@ -1060,8 +1285,9 @@ class Warehouse(gym.Env):
 if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
-    from layout import layout_smallstreet
-    env = Warehouse(9, 8, 3, 30, 3, 1, 10, None, None, RewardType.GLOBAL, layout=layout_smallstreet)
+    from layout import layout_smallstreet, layout_2way, layout_2way_simple
+    env = Warehouse(9, 8, 3, 30, 3, 10, 30, None, None, RewardType.GLOBAL, layout=layout_2way, block_size="small")
+    # env = Warehouse(9, 8, 3, 4, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple, block_size="big")
     env.reset()
     import time
     from tqdm import tqdm

@@ -1,6 +1,13 @@
 # RDLVY
 from RWARE https://github.com/semitable/robotic-warehouse
 
+## Getting started
+```shell
+cd RDLVY
+export PYTHONPATH=$PYTHONPATH:.
+python rware/warehouse.py
+```
+
 ## WorkFlow
 Git Workflow: Fork & Pull Request
 Formatter: Use black

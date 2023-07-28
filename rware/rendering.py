@@ -48,35 +48,28 @@ RAD2DEG = 57.29577951308232
 # # Define some colors
 _BLACK = (0, 0, 0)
 _WHITE = (255, 255, 255)
-_GREEN = (0, 255, 0)
-_RED = (255, 0, 0)
-_ORANGE = (255, 165, 0)
-_DARKORANGE = (255, 140, 0)
-_DARKSLATEBLUE = (72, 61, 139)
-_TEAL = (0, 128, 128)
+_DARKORANGE = (255, 178, 102)
+_GREY = (160, 160, 160)
+_LIGHTGERY = (192, 192, 192)
 
 _BACKGROUND_COLOR = _WHITE
-_GRID_COLOR = _BLACK
-_SHELF_COLOR = _DARKSLATEBLUE
-_SHELF_REQ_COLOR = _TEAL
+_GRID_COLOR = _LIGHTGERY 
+_SHELF_COLOR = _GREY
+_SHELF_REQ_COLOR =  (154, 0, 76) 
 _AGENT_COLOR = _DARKORANGE
-_AGENT_LOADED_COLOR = _RED
-_AGENT_WITH_PACKAGE_3= (255, 0, 90)
-_AGENT_WITH_PACKAGE_2= (180, 0, 60)
-_AGENT_WITH_PACKAGE_1= (120, 0, 30)
+_AGENT_WITH_PACKAGE_3= (153, 0, 76) 
+_AGENT_WITH_PACKAGE_2= (255, 0, 127) 
+_AGENT_WITH_PACKAGE_1= (255, 153, 204)
 _AGENT_DIR_COLOR = _BLACK
-# _GOAL_COLOR = (60, 60, 60)
-_GOAL_COLOR = _GREEN
+_GOAL_COLOR = (102, 102, 255)
 
-_START_CANDIDATE_COLOR = (80, 0, 0)
-_REQUESTED_PACKAGE_COLOR = (200, 0, 0)
-_GOAL_CANDIDATE_COLOR = (60, 50, 120)
-# _PACKAGE_COLOR = _DARKSLATEBLUE
-# _PACKAGE_REQ_COLOR = _TEAL
+_START_CANDIDATE_COLOR = (255, 204, 204)
+_REQUESTED_PACKAGE_COLOR =  (255, 0, 127)
+_GOAL_CANDIDATE_COLOR = _GREY 
 
-_START_CAND_PADDING = 1
-_GOAL_CAND_PADDING = 1
-_SHELF_PADDING = 2
+_START_CAND_PADDING = 0
+_GOAL_CAND_PADDING = 0.8
+_SHELF_PADDING = 0.8 
 _PACKAGE_PADDING = 2
 
 
@@ -99,12 +92,12 @@ def get_display(spec):
 
 
 class Viewer(object):
-    def __init__(self, world_size):
+    def __init__(self, world_size, block_size="small"):
         display = get_display(None)
         self.rows, self.cols = world_size
 
-        self.grid_size = 30
-        self.icon_size = 20
+        self.grid_size = 16 if block_size=="small" else 30
+        self.icon_size = 15 if block_size=="small" else 20
 
         self.width = 1 + self.cols * (self.grid_size + 1)
         self.height = 1 + self.rows * (self.grid_size + 1)
@@ -337,7 +330,7 @@ class Viewer(object):
         agents = []
         batch = pyglet.graphics.Batch()
 
-        radius = self.grid_size / 3
+        radius = self.grid_size / 2.5#3
 
         resolution = 6
 
