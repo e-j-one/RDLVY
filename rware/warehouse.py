@@ -892,8 +892,6 @@ class Warehouse(gym.Env):
         self.requested_goals.append(_new_goal)
 
     def _check_nearby(self, pos):
-        assert self.highways_info[pos[1], pos[0]] == HighwayDirection.ALL
-        # num_nearby_ALL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT = 0, 0, 0, 0, 0
         num_nearby_ALL, num_nearby_NULL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT = 0, 0, 0, 0, 0, 0
         for i, j  in zip([0, 0, 1, -1], [1, -1 ,0, 0]):
             if (pos[1]+i > self.grid_size[0]-1 or pos[1]+i < 0):
@@ -918,12 +916,21 @@ class Warehouse(gym.Env):
         
         return num_nearby_ALL, num_nearby_NULL, num_nearby_UP, num_nearby_DOWN, num_nearby_LEFT, num_nearby_RIGHT
 
-    # for intersection type 1...
+    # Intersection type 3:
+    # ex) x x x x d u x x x x
+    #     l l l l . u x x x x
+    #     r r r r r(.)x x x x
+    #     x x x x x x x x x x
+    # the () point: outer corner point of corner street.
+    #
     # Intersection type 1:
-    # ex) xxxxduxxxx
-    #    xll(.)uxxxxx
-    #     xxxr.xxxxx
-    #    the () point
+    # ex) x x x x d u x x x x
+    #     l l l l(.)u x x x x
+    #     r r r r r . x x x x
+    #     x x x x x x x x x x
+    # the () point: inner corner point of corner street.
+    #
+    # for intersection type 1...
     # cannot decide where to go with only cross information.
     # Need to find where the wall is.
     def _check_corner(self, pos):
@@ -933,7 +940,8 @@ class Warehouse(gym.Env):
                 return (j, i)
         AssertionError("The position is not an intersection type 1.")
 
-            
+    # check if the req_dir is possiple in that point of highways_info  
+    # ex) cannot see down or left on the highways_info==UP point
     def _is_possible_dir(self, highway_dir: HighwayDirection, req_dir:Direction, agent_pos: tuple) -> bool:
         if highway_dir == HighwayDirection.UP:
             if req_dir == Direction.DOWN or req_dir==Direction.LEFT:
@@ -950,14 +958,9 @@ class Warehouse(gym.Env):
         # Intersection logic
         elif highway_dir == HighwayDirection.ALL: 
             n_ALL, n_NULL, n_UP, n_DOWN, n_LEFT, n_RIGHT = self._check_nearby(agent_pos)
+            # Intersection type 3
             # when the number of possible direction is 3 (except the direction where the agent comes from)
             if n_NULL == 2:
-                # print("intersection 3")
-                # print(highway_dir)
-                # print(req_dir)
-                # print(agent_pos)
-                # time.sleep(3)
-                
                 if n_UP * n_LEFT: 
                     if req_dir == Direction.LEFT: return True
                 elif n_DOWN * n_RIGHT:
@@ -969,6 +972,7 @@ class Warehouse(gym.Env):
                 else:
                     AssertionError("Somethings wrong in layout. Check the intersection_3 part.")
                 return False 
+            # Intersection type 1
             # when the number of possible direction is 1
             elif n_NULL == 0:
                 if self._check_corner(agent_pos) == (1, 1):
@@ -984,8 +988,7 @@ class Warehouse(gym.Env):
                     # up-left
                     if req_dir == Direction.LEFT: return True
                 return False
-            # u-turn points
-            # TODO: Apply below code for explicit u-turn point
+            # u-turn points (the edge line)
             elif n_NULL == 1:
                 if agent_pos[1]+1 > self.grid_size[0] - 1:
                     if self.highways_info[agent_pos[1], agent_pos[0]-1] == HighwayDirection.NULL:
@@ -1050,25 +1053,6 @@ class Warehouse(gym.Env):
                 return False
         return True 
     
-    def _is_possible_pos(self, start: tuple, target: tuple) -> bool:
-        if self.highways_info[start[1], start[0]] == HighwayDirection.UP:
-            if (self.highways_info[target[1], target[0]] == HighwayDirection.DOWN
-                or self.highways_info[target[1], target[0]] == HighwayDirection.LEFT):
-                return False
-        elif self.highways_info[start[1], start[0]] == HighwayDirection.DOWN:
-            if (self.highways_info[target[1], target[0]] == HighwayDirection.UP
-                or self.highways_info[target[1], target[0]] == HighwayDirection.RIGHT):
-                return False
-        elif self.highways_info[start[1], start[0]] == HighwayDirection.LEFT:
-            if (self.highways_info[target[1], target[0]] == HighwayDirection.RIGHT
-                or self.highways_info[target[1], target[0]] == HighwayDirection.DOWN):
-                return False
-        elif self.highways_info[start[1], start[0]] == HighwayDirection.RIGHT:
-            if (self.highways_info[target[1], target[0]] == HighwayDirection.LEFT
-                or self.highways_info[target[1], target[0]] == HighwayDirection.UP):
-                return False
-        return True 
-        
     def step(
         self, actions: List[Action]
     ) -> Tuple[List[np.ndarray], List[float], List[bool], Dict]:
@@ -1280,8 +1264,6 @@ class Warehouse(gym.Env):
         else:
             dones = self.n_agents * [False]
         
-        time.sleep(0.02)
-
         new_obs = tuple([self._make_obs(agent) for agent in self.agents])
         info = {}
         return new_obs, list(rewards), dones, info
