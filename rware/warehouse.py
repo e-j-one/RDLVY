@@ -858,18 +858,7 @@ class Warehouse(gym.Env):
         
         # Highways info update in edge points
         # Agents can turn around in the edge of the map.
-        """
-        for y, x in zip(
-            np.indices(self.grid_size)[0].reshape(-1),
-            np.indices(self.grid_size)[1].reshape(-1),
-        ):
-            if self.highways[y, x] and not (x, y) in self.requested_goals :
-                if y == self.grid_size[0]-1 or x==self.grid_size[1]-1:
-                    self.highways_info[y, x] = HighwayDirection.ALL
-                elif y == 0 or x == 0:
-                    self.highways_info[y, x] = HighwayDirection.ALL
-        self._print_highways_info()
-        """          
+             
         return tuple([self._make_obs(agent) for agent in self.agents])
         # for s in self.shelfs:
         #     self.grid[0, s.y, s.x] = 1
@@ -961,6 +950,12 @@ class Warehouse(gym.Env):
             n_ALL, n_NULL, n_UP, n_DOWN, n_LEFT, n_RIGHT = self._check_nearby(agent_pos)
             # when the number of possible direction is 3 (except the direction where the agent comes from)
             if n_NULL == 2:
+                # print("intersection 3")
+                # print(highway_dir)
+                # print(req_dir)
+                # print(agent_pos)
+                # time.sleep(3)
+                
                 if n_UP * n_LEFT: 
                     if req_dir == Direction.LEFT: return True
                 elif n_DOWN * n_RIGHT:
@@ -1131,7 +1126,7 @@ class Warehouse(gym.Env):
                 agent.req_action == Action.FORWARD
                 and (
                     not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.dir, start)
-                    or not self._is_possible_pos(start, target)
+                    #or not self._is_possible_pos(start, target)
                 )
             ):
                 agent.req_action = Action.NOOP
@@ -1282,6 +1277,8 @@ class Warehouse(gym.Env):
             dones = self.n_agents * [True]
         else:
             dones = self.n_agents * [False]
+        
+        time.sleep(0.02)
 
         new_obs = tuple([self._make_obs(agent) for agent in self.agents])
         info = {}
@@ -1307,7 +1304,7 @@ if __name__ == "__main__":
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
     from layout import layout_smallstreet, layout_2way, layout_2way_simple
     # env = Warehouse(9, 8, 3, 30, 3, 10, 30, None, None, RewardType.GLOBAL, layout=layout_2way)
-    env = Warehouse(9, 8, 3, 3, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
+    env = Warehouse(9, 8, 3, 4, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple)
     env.reset()
     import time
     from tqdm import tqdm
