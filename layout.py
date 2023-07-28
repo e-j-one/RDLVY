@@ -147,7 +147,7 @@ xsgggxxxduxxxx
 xxxxx.ll.ugxxx
 xxxxxd.rr.gxxx
 xxxxgdugsgxxxx
-xxxxg.ugxxxxxx
+xxxxx.uxxxxxxx
 """
 
 layout_2way_test_giuk ="""

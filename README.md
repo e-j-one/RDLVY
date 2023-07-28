@@ -1,6 +1,19 @@
 # RDLVY
 from RWARE https://github.com/semitable/robotic-warehouse
 
+
+Below is a rendering of 4 agents with random policy in small (9x14) RDLVY envrionment.
+
+<p align="center">
+ <img width="300px" src="rdlvy_docs/RDLVY_simple.gif" align="center" alt="RDLVY illustration" />
+</p>
+
+Our research will be done on a map modeled after Sangam-dong, Seoul, Repulic of Korea.
+
+<p align="center">
+ <img width="600px" src="rdlvy_docs/Sangam-dong.png" align="center" alt="RDLVY illustration" />
+</p>
+
 ## Getting started
 ```shell
 cd RDLVY
@@ -74,7 +87,6 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
           x x x x d u x x x x
           x x x x d u x x x x
           ...
-
 
           3 way highway example
           ...
