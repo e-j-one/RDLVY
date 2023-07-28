@@ -59,23 +59,24 @@ Agent
     - Intersection에는 두 가지 type이 있음
 
     - Intersection 1
-    - the () point: inner corner point of corner street.
-```shell
-x x x x d u x x x x
-l l l l(.)u x x x x
-r r r r r . x x x x
-x x x x x x x x x x
-```
+      the () point: inner corner point of corner street.
+      Intersection 1에서는 1방향으로만 진행 가능
+
+          x x x x d u x x x x
+          l l l l(.)u x x x x
+          r r r r r . x x x x
+          x x x x x x x x x x
+    
     - Intersection 3
-    - the () point: outer corner point of corner street.
+      the () point: outer corner point of corner street.
+      Intersection 3에서는 3방향 탐색 및 전진 가능
+
 ```shell
 x x x x d u x x x x
 l l l l . u x x x x
 r r r r r(.)x x x x
 x x x x x x x x x x
 ```
-    - Intersection 3에서는 3방향 탐색 및 전진 가능
-    - Intersection 1에서는 1방향으로만 진행 가능
 
 ## Observations
 TODO:
