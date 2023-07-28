@@ -140,13 +140,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 layout_2way_simple ="""
 xxxxxxxxd.xxxx
-xxggxxxgduxsgx
+xxgxgxxgduxsxx
 .llllllldlllll
 rrrrrrrrrurrr.
-xsgggxxxduxxxx
+xsxgxxxxduxxgx
 xxxxx.ll.ugxxx
 xxxxxd.rr.gxxx
-xxxxgdugsgxxxx
+xxxxgduxsxxxxx
 xxxxx.uxxxxxxx
 """
 

@@ -1281,7 +1281,7 @@ if __name__ == "__main__":
     from layout import layout_smallstreet, layout_2way, layout_2way_simple, layout_2way_test_giuk
     env = Warehouse(9, 8, 3, 30, 3, 10, 10, None, None, RewardType.GLOBAL, layout=layout_2way, block_size="small")
     # env = Warehouse(9, 8, 3, 4, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple, block_size="big")
-    # env = Warehouse(9, 8, 3, 10, 3, 3, 10, None, None, RewardType.GLOBAL, layout=layout_2way_test_giuk, block_size="big")
+    # # env = Warehouse(9, 8, 3, 10, 3, 3, 10, None, None, RewardType.GLOBAL, layout=layout_2way_test_gi, block_size="big")
     env.reset()
     import time
     from tqdm import tqdm
