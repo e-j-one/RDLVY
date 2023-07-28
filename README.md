@@ -28,7 +28,11 @@ Agent
 - Agent는 여러개의 package를 담을 수 있음
 
 이동 규칙
-- TODO:
+- 한국의 도로 운행법을 따름
+- 직진 및 우회전은 자유롭게 가능
+- 유턴 및 좌회전은 교차로(intersection)에서 가능
+- 중앙선 침범은 원체 불가능
+- 중앙선 방향으로 agent direction 변경 불가
 
 ### Package
 1. start에서 여러개의 package를 생성
@@ -46,7 +50,32 @@ Agent
     - 새로운 goal 생성되고 배달 완료된 goal 없어짐
 
 ### HighWay Rules
-TODO:
+1. Highways 
+- Highway는 agent가 다닐 수 있는 모든 block을 지칭함 (goal 및 start 포함)
+    - Highway block은 block마다 해당 도로가 어떤 방향으로 향하는 도로인지인 정보를 가지고 있음(highways_info)
+    - Highways info를 따라 agent가 바라볼 수 있는 방향이 정해짐
+- Intersection
+- Highways info에 ALL로, map layout에 . 기호로 표시됨
+    - Intersection에는 두 가지 type이 있음
+
+    - Intersection 1
+    - the () point: inner corner point of corner street.
+```shell
+x x x x d u x x x x
+l l l l(.)u x x x x
+r r r r r . x x x x
+x x x x x x x x x x
+```
+    - Intersection 3
+    - the () point: outer corner point of corner street.
+```shell
+x x x x d u x x x x
+l l l l . u x x x x
+r r r r r(.)x x x x
+x x x x x x x x x x
+```
+    - Intersection 3에서는 3방향 탐색 및 전진 가능
+    - Intersection 1에서는 1방향으로만 진행 가능
 
 ## Observations
 TODO:
