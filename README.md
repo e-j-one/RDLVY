@@ -53,33 +53,49 @@ Agent
 1. Highways 
 - Highway는 agent가 다닐 수 있는 모든 block을 지칭함 (goal 및 start 포함)
     - Highway block은 block마다 해당 도로가 어떤 방향으로 향하는 도로인지인 정보를 가지고 있음(highways_info)
-    - Highways info를 따라 agent가 바라볼 수 있는 방향이 정해짐
-- Intersection
-- Highways info에 ALL로, map layout에 . 기호로 표시됨
+    - Highways info를 따라 agent가 진행할 수 있는 방향이 정해짐
+    - 갈 수 있는 진행 방향이 나올 때까지 해당 위치에서 방향 변경(역주행 및 중앙선 침범 금지)
+
+### Layout Rules
+Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 도로 주행 로직이 정상적으로 작동함
+1. Layout의 모든 point는 'r', 'l', 'u', 'd', '.', 'x', 's', 'g' 중 하나여야 함
+2. 'x'의 경우 highway가 아닌 장애물을 나타냄
+2. 'r', 'l', 'u', 'd'의 경우, intersection을 제외한 highway를 구성하고 해당 point에서 highway info를 결정함
+3. '.'는 intersection을 나타내는 layout으로, 단방향 코너 (!!사거리, 삼거리 미포함!!) 및 layout의 가장자리까지 도로가 연결되는 경우에서만 사용해야 함
+- Intersection 
+    - Intersection point에서 highway info는 ALL
     - Intersection에는 두 가지 type이 있음
+        - Intersection 1
 
-    - Intersection 1
-      the () point: inner corner point of corner street.
-      Intersection 1에서는 1방향으로만 진행 가능
+          the () point: inner corner point of corner street.
+          Intersection 1에서는 1방향으로만 진행 가능
 
-          x x x x d u x x x x
-          l l l l(.)u x x x x
-          r r r r r . x x x x
-          x x x x x x x x x x
+              x x x x d u x x x x
+              l l l l(.)u x x x x
+              r r r r r . x x x x
+              x x x x x x x x x x
     
-    - Intersection 3
-      the () point: outer corner point of corner street.
-      Intersection 3에서는 3방향 탐색 및 전진 가능
+        - Intersection 3
 
-```shell
-x x x x d u x x x x
-l l l l . u x x x x
-r r r r r(.)x x x x
-x x x x x x x x x x
-```
+          the () point: outer corner point of corner street.
+          Intersection 3에서는 3방향 탐색 및 전진 가능
 
-## Observations
-TODO:
+              x x x x d u x x x x
+              l l l l . u x x x x
+              r r r r r(.)x x x x
+              x x x x x x x x x x
+
+    - Layout 가장자리에서 사용하는 경우, Uturn을 위한 포인트로, 가장자리에 진입하는 point에만 사용해야 함
+
+          Edge point example
+          x x x x d(.)x x x x
+          x x x x d u x x x x
+          x x x x d u x x x x
+          ...
+
+
+## Observation우
+TODO서
 
 
 <p align="center">
