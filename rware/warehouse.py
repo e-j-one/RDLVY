@@ -988,7 +988,7 @@ class Warehouse(gym.Env):
                     # up-left
                     if req_dir == Direction.LEFT: return True
                 return False
-            # u-turn points (the edge line)
+            # u-turn points (the end of road at the the edge of the layout)
             elif n_NULL == 1:
                 if agent_pos[1]+1 > self.grid_size[0] - 1:
                     if self.highways_info[agent_pos[1], agent_pos[0]-1] == HighwayDirection.NULL:
@@ -1112,7 +1112,6 @@ class Warehouse(gym.Env):
                 agent.req_action == Action.FORWARD
                 and (
                     not self._is_possible_dir(self.highways_info[agent.y, agent.x], agent.dir, start)
-                    #or not self._is_possible_pos(start, target)
                 )
             ):
                 agent.req_action = Action.NOOP
