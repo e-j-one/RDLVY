@@ -60,8 +60,34 @@ Agent
 Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 도로 주행 로직이 정상적으로 작동함
 1. Layout의 모든 point는 'r', 'l', 'u', 'd', '.', 'x', 's', 'g' 중 하나여야 함
 2. 'x'의 경우 highway가 아닌 장애물을 나타냄
-2. 'r', 'l', 'u', 'd'의 경우, intersection을 제외한 highway를 구성하고 해당 point에서 highway info를 결정함
-3. '.'는 intersection을 나타내는 layout으로, 단방향 코너 (!!사거리, 삼거리 미포함!!) 및 layout의 가장자리까지 도로가 연결되는 경우에서만 사용해야 함
+3. 'r', 'l', 'u', 'd'의 경우, intersection을 제외한 highway를 구성하고 해당 point에서 highway info를 결정함
+- 사거리 및 삼거리
+    - 사거리 및 삼거리의 경우 intersection layout('.')을 !!사용하지 않고!! 구성해야 함.
+
+          4 way highway example
+          ...
+          x x x x d u x x x x
+          x x x x d u x x x x
+          x x x x d u x x x x
+          l l l l d l l l l l
+          r r r r r u r r r r
+          x x x x d u x x x x
+          x x x x d u x x x x
+          ...
+
+
+          3 way highway example
+          ...
+          x x x x d u x x x x
+          x x x x d u x x x x
+          x x x x d u x x x x
+          x x x x d u x x x x
+          l l l l d l l l l l
+          r r r r r r r r r r
+          x x x x x x x x x x
+
+
+4. '.'는 intersection을 나타내는 layout으로, 단방향 코너 (!!사거리, 삼거리 미포함!!) 및 layout의 가장자리까지 도로가 연결되는 경우에서만 사용해야 함
 - Intersection 
     - Intersection point에서 highway info는 ALL
     - Intersection에는 두 가지 type이 있음
@@ -92,6 +118,13 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
           x x x x d u x x x x
           x x x x d u x x x x
           ...
+
+5. 's'는 start point를 나타냄.
+- start point는 물건을 싣는 곳으로, rendering 상에서는 빨간색으로 표시되고, starting point에 적재된 package가 없을 경우 옅은 분홍색
+
+6. 'g'는 goal point candidate를 나타냄.
+- Layout에서 g로 표시된 곳 중 파라미터의 goal포인트 수 만큼 goal을 랜덤하게 선택하여 초기화. Goal point로 선정된 곳에 패키지가 배달되면 해당 포인트는 goal point에서 제거되며 새로운 goal point가 goal point candiate 중에 랜덤하게 선택되어 생성됨.
+- Layout에서 'g'는 상당히 많아도 됨. 길을 따라 모든 곳에 생성 가능.
 
 
 ## Observation우
