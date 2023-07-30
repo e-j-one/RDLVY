@@ -139,8 +139,29 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
 - Layout에서 'g'는 상당히 많아도 됨. 길을 따라 모든 곳에 생성 가능.
 
 
-## Observation우
-TODO서
+## Observations
+### Imabe observations description
+- SEHLVES: represents shelves(=obstacle)
+- REQUESTS: represents requested 'packages'
+- AGENTS
+- AGENT_DIRECTION
+- AGENT_LOAD: if agents are carrying packages(1) or not(0)
+- GOALS: represents requested goals
+- ACCESSIBLE: 0 if cell is occupied by other agent
+
+### Dictionary observations description
+obs["self"]
+- location
+- carrying_shelf -> represents number of carrying 'package'
+- direction
+- on_highway
+obs["sensors"][i]
+- has_agents
+- direction
+- local_message
+- has_shelf -> represents shelf(=obstacle)
+- shelf_requested -> represents if there is 'package' requested
+
 
 
 <p align="center">
