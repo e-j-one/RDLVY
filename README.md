@@ -155,6 +155,7 @@ obs["self"]
 - carrying_shelf -> represents number of carrying 'package'
 - direction
 - on_highway
+
 obs["sensors"][i]
 - has_agents
 - direction
