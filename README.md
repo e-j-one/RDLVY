@@ -140,7 +140,7 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
 
 
 ## Observations
-### Imabe observations description
+### Image observations description
 - SEHLVES: represents shelves(=obstacle)
 - REQUESTS: represents requested 'packages'
 - AGENTS
@@ -149,12 +149,13 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
 - GOALS: represents requested goals
 - ACCESSIBLE: 0 if cell is occupied by other agent
 
-### Dictionary observations description
+### [WIP] Dictionary observations description
 obs["self"]
 - location
 - carrying_shelf -> represents number of carrying 'package'
 - direction
 - on_highway
+
 obs["sensors"][i]
 - has_agents
 - direction
