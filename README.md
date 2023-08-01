@@ -1,6 +1,10 @@
 # RDLVY
 from RWARE https://github.com/semitable/robotic-warehouse
 
+## TODO
+- [ ] Include destination (goal) information in packages -> Add identifiers to the goal location.
+- [ ] Allow agents to overlap in a cell -> Modify the agent layer
+- [ ] Construct a directed graph representation of the map, including information on goals, agents and packages
 
 Below is a rendering of 4 agents with random policy in small (9x14) RDLVY envrionment.
 
@@ -13,6 +17,34 @@ Our research will be done on a map modeled after Sangam-dong, Seoul, Repulic of 
 <p align="center">
  <img width="600px" src="rdlvy_docs/Sangam-dong.png" align="center" alt="RDLVY illustration" />
 </p>
+
+<h1>Table of Contents</h1>
+
+- [RDLVY](#rdlvy)
+  - [TODO](#todo)
+  - [Getting started](#getting-started)
+  - [WorkFlow](#workflow)
+  - [Env Description](#env-description)
+    - [Package](#package)
+    - [HighWay Rules](#highway-rules)
+    - [Layout Rules](#layout-rules)
+  - [Observations](#observations)
+    - [Image observations description](#image-observations-description)
+    - [\[WIP\] Dictionary observations description](#wip-dictionary-observations-description)
+- [RWARE](#rware)
+- [Environment Description](#environment-description)
+  - [What does it look like?](#what-does-it-look-like)
+  - [Action Space](#action-space)
+  - [Observation Space](#observation-space)
+  - [Dynamics: Collisions](#dynamics-collisions)
+  - [Rewards](#rewards)
+- [Environment Parameters](#environment-parameters)
+  - [Naming Scheme](#naming-scheme)
+  - [Custom layout](#custom-layout)
+- [Installation](#installation)
+- [Getting Started](#getting-started-1)
+- [Please Cite](#please-cite)
+
 
 ## Getting started
 ```shell
@@ -163,7 +195,8 @@ obs["sensors"][i]
 - has_shelf -> represents shelf(=obstacle)
 - shelf_requested -> represents if there is 'package' requested
 
-
+---
+# RWARE
 
 <p align="center">
  <img width="350px" src="docs/img/rware.png" align="center" alt="Multi-Robot Warehouse (RWARE)" />
@@ -172,22 +205,6 @@ obs["sensors"][i]
 
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
 [![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
-
-<h1>Table of Contents</h1>
-
-- [Environment Description](#environment-description)
-  - [What does it look like?](#what-does-it-look-like)
-  - [Action Space](#action-space)
-  - [Observation Space](#observation-space)
-  - [Dynamics: Collisions](#dynamics-collisions)
-  - [Rewards](#rewards)
-- [Environment Parameters](#environment-parameters)
-  - [Naming Scheme](#naming-scheme)
-  - [Custom layout](#custom-layout)
-- [Installation](#installation)
-- [Getting Started](#getting-started)
-- [Please Cite](#please-cite)
-
 
 # Environment Description
 
