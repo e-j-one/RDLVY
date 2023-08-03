@@ -813,7 +813,7 @@ class Warehouse(gym.Env):
                 np.indices(self.grid_size)[0].reshape(-1),
                 np.indices(self.grid_size)[1].reshape(-1),
             )
-            if not self._is_highway(x, y)
+            if self.highways_info[y, x] == HighwayDirection.NULL
         ]
 
         # self.request_queue = list(
