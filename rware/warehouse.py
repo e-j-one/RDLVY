@@ -1336,7 +1336,6 @@ if __name__ == "__main__":
 
     # env.step(18 * [Action.LOAD] + 2 * [Action.NOOP])
     state = env.reset()
-    print(state.shape)
 
     for _ in tqdm(range(1000000)):
         # time.sleep(2)
