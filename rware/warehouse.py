@@ -231,48 +231,12 @@ class Warehouse(gym.Env):
         normalised_coordinates: bool=False,
         package_carrying_capacity_per_agent: int = 3,
         block_size="small",
-        shelf_columns: int = 0,
-        column_height: int = 0,
-        shelf_rows: int = 0,
     ):
         """The robotic warehouse environment
 
         Creates a grid world where multiple agents (robots)
         are supposed to collect shelfs, bring them to a goal
         and then return them.
-        .. note:
-            The grid looks like this:
-
-            shelf
-            columns
-                vv
-            ----------
-            -XX-XX-XX-        ^
-            -XX-XX-XX-  Column Height
-            -XX-XX-XX-        v
-            ----------
-            -XX----XX-   <\
-            -XX----XX-   <- Shelf Rows
-            -XX----XX-   </
-            ----------
-            ----GG----
-
-            G: is the goal positions where agents are rewarded if
-            they bring the correct shelfs.
-
-            The final grid size will be
-            height: (column_height + 1) * shelf_rows + 2
-            width: (2 + 1) * shelf_columns + 1
-
-            The bottom-middle column will be removed to allow for
-            robot queuing next to the goal locations
-
-        :param shelf_columns: Number of columns in the warehouse
-        :type shelf_columns: int
-        :param column_height: Column height in the warehouse
-        :type column_height: int
-        :param shelf_rows: Number of columns in the warehouse
-        :type shelf_rows: int
         :param n_agents: Number of spawned and controlled agents
         :type n_agents: int
         :param msg_bits: Number of communication bits for each agent
@@ -313,7 +277,7 @@ class Warehouse(gym.Env):
         # self.starts_with_package_grid = np.zeros(self.grid_size, dtype=np.int32)
 
         if not layout:
-            self._make_layout_from_params(shelf_columns, shelf_rows, column_height)
+            NotImplementedError("layout should be given")
         else:
             self._make_layout_from_str(layout)
 
