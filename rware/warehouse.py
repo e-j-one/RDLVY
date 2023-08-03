@@ -480,7 +480,7 @@ class Warehouse(gym.Env):
                                     OrderedDict(
                                         {
                                             "location": location_space,
-                                            "carrying_shelf": spaces.MultiDiscrete([2]), # Now works as carrying_package # TODO: change name
+                                            "carrying_package": spaces.MultiDiscrete([2]),
                                             "direction": spaces.Discrete(4),
                                             "on_highway": spaces.MultiBinary(1), # Should always be true
                                         }
@@ -498,9 +498,8 @@ class Warehouse(gym.Env):
                                                         self.msg_bits
                                                     ),
                                                     "has_shelf": spaces.MultiBinary(1), # Leave it as location of shelf # TODO: change name
-                                                    # "shelf_requested": spaces.MultiBinary(1), # Now works as package_packages # TODO: change name
-                                                    "shelf_requested": spaces.Discrete(1), # Now works as package_packages # TODO: change name
-                                                    "goal_requested": spaces.Discrete(1),
+                                                    "package_requested": spaces.MultiBinary(1), 
+                                                    "goal_requested": spaces.MultiBinary(1),
                                                 }
                                             )
                                         ),
@@ -585,8 +584,8 @@ class Warehouse(gym.Env):
                     elif layer_type == ImageLayer.ACCESSIBLE:
                         layer = (1. - self.grid[_LAYER_SHELFS].copy().astype(np.float32) > 0)
                         # layer = np.ones(self.grid_size, dtype=np.float32)
-                        # for ag in self.agents:
-                            # layer[ag.y, ag.x] = 0.0 # TODO: change accessiblity as road become two-way
+                        for ag in self.agents:
+                            layer[ag.y, ag.x] = 0.0 # TODO: change accessiblity as road become two-way
 
                     # pad with 0s for out-of-map cells
                     org_layer = layer
@@ -719,7 +718,7 @@ class Warehouse(gym.Env):
         obs["self"] = {
             "location": np.array([agent_x, agent_y]),
             # "carrying_shelf": [int(agent.carrying_shelf is not None)],
-            "carrying_shelf": [int(agent.carrying_package() is not None)], 
+            "carrying_package": [int(agent.carrying_package() is not None)], 
             "direction": agent.dir.value,
             "on_highway": [int(self._is_highway(agent.x, agent.y))],
         }
@@ -751,9 +750,9 @@ class Warehouse(gym.Env):
         # find neighboring start position with requested packages
         for i, num_ in enumerate(requested_packages):
             if num_ == 0:
-                obs["sensors"][i]["shelf_requested"] = [0]
+                obs["sensors"][i]["package_requested"] = [0]
             else:
-                obs["sensors"][i]["shelf_requested"] = [1]
+                obs["sensors"][i]["package_requested"] = [1]
         
         # find neighboring start position with requested goals
         for i, num_ in enumerate(requested_goals):
@@ -1270,19 +1269,19 @@ class Warehouse(gym.Env):
     
 
 if __name__ == "__main__":
-    from layout import layout_smallstreet, layout_2way, layout_2way_simple, layout_2way_test_giuk
-    env = Warehouse(n_agents=4,
-                    msg_bits=0,
-                    sensor_range=3,
-                    request_queue_size=5,
-                    max_inactivity_steps=10000,
-                    max_steps=10000,
-                    reward_type=RewardType.TWO_STAGE,
-                    layout=layout_2way_simple,
-                    block_size="big",
-                    observation_type=ObserationType.IMAGE,
-                    use_full_obs=True
-                    )
+    from layout import layout_smallstreet, layout_2way, layout_2way_simple, layout_2way_obs_test
+    #env = Warehouse(n_agents=4,
+    #                msg_bits=0,
+    #                sensor_range=3,
+    #                request_queue_size=5,
+    #                max_inactivity_steps=10000,
+    #                max_steps=10000,
+    #                reward_type=RewardType.TWO_STAGE,
+    #                layout=layout_2way_simple,
+    #                block_size="big",
+    #                observation_type=ObserationType.IMAGE,
+    #                use_full_obs=True
+    #                )
     env = Warehouse(n_agents=30,
                     msg_bits=0,
                     sensor_range=10,
@@ -1302,7 +1301,6 @@ if __name__ == "__main__":
     state = env.reset()
 
     for _ in tqdm(range(1000000)):
-        # time.sleep(2)
         env.render()
         actions = env.action_space.sample()
         next_obs, reward, dones, info = env.step(actions)

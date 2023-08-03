@@ -150,6 +150,15 @@ xxxxgduxsxxxxx
 xxxxx.uxxxxxxx
 """
 
+layout_2way_obs_test="""
+xxx
+xxx
+xxx
+xgx
+gus
+xsx
+"""
+
 layout_2way_test_giuk ="""
 xxxxsssssssxxxx
 xxxg.lllll.gxxx
