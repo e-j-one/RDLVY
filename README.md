@@ -1,6 +1,10 @@
 # RDLVY
 from RWARE https://github.com/semitable/robotic-warehouse
 
+## TODO
+- [ ] Include destination (goal) information in packages -> Add identifiers to the goal location.
+- [ ] Allow agents to overlap in a cell -> Modify the agent layer
+- [ ] Construct a directed graph representation of the map, including information on goals, agents and packages
 
 Below is a rendering of 4 agents with random policy in small (9x14) RDLVY envrionment.
 
@@ -13,6 +17,34 @@ Our research will be done on a map modeled after Sangam-dong, Seoul, Repulic of 
 <p align="center">
  <img width="600px" src="rdlvy_docs/Sangam-dong.png" align="center" alt="RDLVY illustration" />
 </p>
+
+<h1>Table of Contents</h1>
+
+- [RDLVY](#rdlvy)
+  - [TODO](#todo)
+  - [Getting started](#getting-started)
+  - [WorkFlow](#workflow)
+  - [Env Description](#env-description)
+    - [Package](#package)
+    - [HighWay Rules](#highway-rules)
+    - [Layout Rules](#layout-rules)
+  - [Observations](#observations)
+    - [Image observations description](#image-observations-description)
+    - [\[WIP\] Dictionary observations description](#wip-dictionary-observations-description)
+- [RWARE](#rware)
+- [Environment Description](#environment-description)
+  - [What does it look like?](#what-does-it-look-like)
+  - [Action Space](#action-space)
+  - [Observation Space](#observation-space)
+  - [Dynamics: Collisions](#dynamics-collisions)
+  - [Rewards](#rewards)
+- [Environment Parameters](#environment-parameters)
+  - [Naming Scheme](#naming-scheme)
+  - [Custom layout](#custom-layout)
+- [Installation](#installation)
+- [Getting Started](#getting-started-1)
+- [Please Cite](#please-cite)
+
 
 ## Getting started
 ```shell
@@ -139,9 +171,64 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
 - Layout에서 'g'는 상당히 많아도 됨. 길을 따라 모든 곳에 생성 가능.
 
 
-## Observation
-TODO
+## Observations
+### Image observations description
+- SEHLVES: represents shelves(=obstacle)
+- REQUESTS: represents requested 'packages'
+- AGENTS
+- AGENT_DIRECTION
+- AGENT_LOAD: if agents are carrying packages(1) or not(0)
+- GOALS: represents requested goals
+- ACCESSIBLE: 0 if cell is occupied by other agent
 
+- Env 생성 시 observation_type=ObsevationType.IMAGE, use_full_obs=True option으로 전체 obs에 접근 가능
+- image_observation_layers=[
+
+    ImageLayer.SHELVES,
+
+    ImageLayer.REQUESTS,
+
+    ImageLayer.AGENTS,
+
+    ImageLayer.AGENT_DIRECTION,
+
+    ImageLayer.AGENT_LOAD,
+
+    ImageLayer.GOALS,
+
+    ImageLayer.ACCESSIBLE
+
+  ]
+
+  로 원하는 layer 중 선택 가능
+
+
+### [WIP] Dictionary observations description
+obs["self"]
+- location
+- carrying_shelf -> represents number of carrying 'package'
+- direction
+- on_highway
+
+obs["sensors"][i]
+- has_agents
+- direction
+- local_message
+- has_shelf -> represents shelf(=obstacle)
+- shelf_requested -> represents if there is 'package' requested
+- goal_requested -> represents if there is 'goal' requested
+
+
+## Reward
+- Env 생성 시 reward_type= 파라미터로 조절 가능
+- RewardType.GLOBAL: delivery 완료 시 모든 agent가 +1의 reward를 받음
+- RewardType.INDIVIDUAL: delivery 완료 시 해당 agent만 +1의 reward를 받음
+- RewardType.TWO_STAGE: 해당 agent만 package를 load할 때 +0.5, deliver를 완료할 때 +0.5의 reward를 받음
+
+
+
+---
+# RWARE
 
 <p align="center">
  <img width="350px" src="docs/img/rware.png" align="center" alt="Multi-Robot Warehouse (RWARE)" />
@@ -150,22 +237,6 @@ TODO
 
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
 [![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
-
-<h1>Table of Contents</h1>
-
-- [Environment Description](#environment-description)
-  - [What does it look like?](#what-does-it-look-like)
-  - [Action Space](#action-space)
-  - [Observation Space](#observation-space)
-  - [Dynamics: Collisions](#dynamics-collisions)
-  - [Rewards](#rewards)
-- [Environment Parameters](#environment-parameters)
-  - [Naming Scheme](#naming-scheme)
-  - [Custom layout](#custom-layout)
-- [Installation](#installation)
-- [Getting Started](#getting-started)
-- [Please Cite](#please-cite)
-
 
 # Environment Description
 
@@ -354,4 +425,3 @@ If you use this environment, consider citing
 }
 
 ```
-

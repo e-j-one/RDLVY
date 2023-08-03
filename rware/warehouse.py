@@ -222,6 +222,8 @@ class Warehouse(gym.Env):
             ImageLayer.SHELVES,
             ImageLayer.REQUESTS,
             ImageLayer.AGENTS,
+            ImageLayer.AGENT_DIRECTION,
+            ImageLayer.AGENT_LOAD,
             ImageLayer.GOALS,
             ImageLayer.ACCESSIBLE
         ],
@@ -403,6 +405,7 @@ class Warehouse(gym.Env):
         self.grid_size = (grid_height, grid_width)
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
         self.requested_package_grid = np.zeros(self.grid_size, dtype=np.int32)
+        self.requested_goal_grid = np.zeros(self.grid_size, dtype=np.int32)
         self.highways = np.zeros(self.grid_size, dtype=np.int32)
         self.highways_info = np.array([HighwayDirection.NULL for _ in range(self.grid_size[0]*self.grid_size[1])]).reshape(self.grid_size)
 
@@ -533,7 +536,7 @@ class Warehouse(gym.Env):
                                                     "has_shelf": spaces.MultiBinary(1), # Leave it as location of shelf # TODO: change name
                                                     # "shelf_requested": spaces.MultiBinary(1), # Now works as package_packages # TODO: change name
                                                     "shelf_requested": spaces.Discrete(1), # Now works as package_packages # TODO: change name
-                                                    "goal_requested": spaces.Discrete(4),
+                                                    "goal_requested": spaces.Discrete(1),
                                                 }
                                             )
                                         ),
@@ -577,7 +580,6 @@ class Warehouse(gym.Env):
                 org_layers = []
                 # first agent's observation --> update global observation layers
                 for layer_type in self.image_observation_layers:
-                    print(layer_type)
                     if layer_type == ImageLayer.SHELVES:
                         layer = self.grid[_LAYER_SHELFS].copy().astype(np.float32)
                         # set all occupied shelf cells to 1.0 (instead of shelf ID)
@@ -599,7 +601,7 @@ class Warehouse(gym.Env):
                         layer = np.zeros(self.grid_size, dtype=np.float32)
                         for ag in self.agents:
                             agent_direction = ag.dir.value + 1
-                            layer[ag.x, ag.y] = float(agent_direction)
+                            layer[ag.y, ag.x] = float(agent_direction)
                         # print("AGENT DIRECTIONS LAYER")
                     elif layer_type == ImageLayer.AGENT_LOAD:
                         layer = np.zeros(self.grid_size, dtype=np.float32)
@@ -607,7 +609,7 @@ class Warehouse(gym.Env):
                             # if ag.carrying_shelf is not None:
                             #     layer[ag.x, ag.y] = 1.0
                             if ag.carrying_package() is not None:
-                                layer[ag.x, ag.y] = 1.0
+                                layer[ag.y, ag.x] = 1.0
                         # print("AGENT LOAD LAYER")
                     elif layer_type == ImageLayer.GOALS:
                         layer = np.zeros(self.grid_size, dtype=np.float32)
@@ -617,15 +619,11 @@ class Warehouse(gym.Env):
                             layer[goal_x, goal_y] = 1.0
                         # print("GOALS LAYER")
                     elif layer_type == ImageLayer.ACCESSIBLE:
-                        if self.use_full_obs:
-                            layer = (1. - self.grid[_LAYER_SHELFS].copy().astype(np.float32) > 0)
-                        else:
-                            layer = np.ones(self.grid_size, dtype=np.float32)
-                            for ag in self.agents:
-                                layer[ag.y, ag.x] = 0.0 # TODO: change accessiblity as road become two-way
-                        # print("ACCESSIBLE LAYER")
-                    # print(layer)
-                    # print()
+                        layer = (1. - self.grid[_LAYER_SHELFS].copy().astype(np.float32) > 0)
+                        # layer = np.ones(self.grid_size, dtype=np.float32)
+                        # for ag in self.agents:
+                            # layer[ag.y, ag.x] = 0.0 # TODO: change accessiblity as road become two-way
+
                     # pad with 0s for out-of-map cells
                     org_layer = layer
                     org_layers.append(org_layer)
@@ -633,8 +631,8 @@ class Warehouse(gym.Env):
                     layers.append(layer)
                 self.global_layers = np.stack(layers)
                 self.org_global_layers = np.stack(org_layers)
-                if self.use_full_obs:
-                    return self.org_global_layers
+            if self.use_full_obs:
+                return self.org_global_layers
 
             # global information was generated --> get information for agent
             start_x = agent.y
@@ -679,6 +677,9 @@ class Warehouse(gym.Env):
             padded_requested_packages = np.pad(
                 self.requested_package_grid, self.sensor_range, mode="constant"
             )
+            padded_requested_goals = np.pad(
+                self.requested_goal_grid, self.sensor_range, mode="constant"
+            )
             # + self.sensor_range due to padding
             min_x += self.sensor_range
             max_x += self.sensor_range
@@ -689,10 +690,12 @@ class Warehouse(gym.Env):
             padded_agents = self.grid[_LAYER_AGENTS]
             padded_shelfs = self.grid[_LAYER_SHELFS]
             padded_requested_packages = self.requested_package_grid
+            padded_requested_goals = self.requested_goal_grid
 
         agents = padded_agents[min_y:max_y, min_x:max_x].reshape(-1)
         shelfs = padded_shelfs[min_y:max_y, min_x:max_x].reshape(-1)
         requested_packages = padded_requested_packages[min_y:max_y, min_x:max_x].reshape(-1)
+        requested_goals = padded_requested_goals[min_y:max_y, min_x:max_x].reshape(-1)
 
         if self.fast_obs:
             # write flattened observations
@@ -712,7 +715,7 @@ class Warehouse(gym.Env):
             obs.write(direction)
             obs.write([int(self._is_highway(agent.x, agent.y))])
 
-            for i, (id_agent, id_shelf, num_requested_packages) in enumerate(zip(agents, shelfs, requested_packages)):
+            for i, (id_agent, id_shelf, num_requested_packages, num_requested_goals) in enumerate(zip(agents, shelfs, requested_packages, requested_goals)):
                 if id_agent == 0:
                     obs.skip(1)
                     obs.write([1.0])
@@ -732,6 +735,8 @@ class Warehouse(gym.Env):
                         [1.0]
                     )
                 if num_requested_packages == 0:
+                    obs.skip(1)
+                if num_requested_goals == 0:
                     obs.skip(1)
                 else:
                     obs.write([1.0])
@@ -785,7 +790,14 @@ class Warehouse(gym.Env):
                 obs["sensors"][i]["shelf_requested"] = [0]
             else:
                 obs["sensors"][i]["shelf_requested"] = [1]
-
+        
+        # find neighboring start position with requested goals
+        for i, num_ in enumerate(requested_goals):
+            if num_ == 0:
+                obs["sensors"][i]["goal_requested"] = [0]
+            else:
+                obs["sensors"][i]["goal_requested"] = [1]
+        
         return obs
 
     def _recalc_grid(self):
@@ -822,7 +834,6 @@ class Warehouse(gym.Env):
                 line_info.append(self.highways_info[i, j].value)
             print(line_info)
             print()
-    
     
     def reset(self):
         Shelf.counter = 0
@@ -873,7 +884,10 @@ class Warehouse(gym.Env):
         # Highways info update in edge points
         # Agents can turn around in the edge of the map.
              
-        return tuple([self._make_obs(agent) for agent in self.agents])
+        if self.use_full_obs:
+            return self._make_obs(self.agents[0])
+        else:
+            return tuple([self._make_obs(agent) for agent in self.agents])
         # for s in self.shelfs:
         #     self.grid[0, s.y, s.x] = 1
         # print(self.grid[0])
@@ -1271,7 +1285,8 @@ class Warehouse(gym.Env):
         else:
             dones = self.n_agents * [False]
         
-        new_obs = tuple([self._make_obs(agent) for agent in self.agents])
+        new_obs = tuple([self._make_obs(agent) for agent in self.agents]) if not self.use_full_obs \
+            else self._make_obs(self.agents[0])
         info = {}
         return new_obs, list(rewards), dones, info
 
@@ -1292,8 +1307,6 @@ class Warehouse(gym.Env):
 
 if __name__ == "__main__":
     from layout import layout_smallstreet, layout_2way, layout_2way_simple, layout_2way_test_giuk
-    # env = Warehouse(9, 8, 3, 30, 0, 10, 10, None, None, RewardType.GLOBAL, layout=layout_2way, block_size="small")
-    # env = Warehouse(9, 8, 3, 4, 0, 3, 3, None, None, RewardType.TWO_STAGE, layout=layout_2way_simple, block_size="big")
     env = Warehouse(n_agents=4,
                     msg_bits=0,
                     sensor_range=3,
@@ -1306,19 +1319,27 @@ if __name__ == "__main__":
                     observation_type=ObserationType.IMAGE,
                     use_full_obs=True
                     )
-    # # env = Warehouse(9, 8, 3, 10, 3, 3, 10, None, None, RewardType.GLOBAL, layout=layout_2way_test_gi, block_size="big")
+    env = Warehouse(n_agents=30,
+                    msg_bits=0,
+                    sensor_range=10,
+                    request_queue_size=20,
+                    max_inactivity_steps=10000,
+                    max_steps=10000,
+                    reward_type=RewardType.TWO_STAGE,
+                    layout=layout_2way,
+                    block_size="small",
+                    observation_type=ObserationType.IMAGE,
+                    use_full_obs=True
+                    )
     import time
     from tqdm import tqdm
 
     # env.step(18 * [Action.LOAD] + 2 * [Action.NOOP])
     state = env.reset()
-    time.sleep(1000)
+    print(state.shape)
 
     for _ in tqdm(range(1000000)):
         # time.sleep(2)
         env.render()
         actions = env.action_space.sample()
         next_obs, reward, dones, info = env.step(actions)
-        for r in reward:
-            if r:
-                print(reward)
