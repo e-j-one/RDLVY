@@ -140,14 +140,23 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 layout_2way_simple ="""
 xxxxxxxxd.xxxx
-xxggxxxgduxsgx
+xxgxgxgxduxsxx
 .llllllldlllll
 rrrrrrrrrurrr.
-xsgggxxxduxxxx
+xsxgxxxxduxxgx
 xxxxx.ll.ugxxx
 xxxxxd.rr.gxxx
-xxxxgdugsgxxxx
+xxxxgduxsxxxxx
 xxxxx.uxxxxxxx
+"""
+
+layout_2way_obs_test="""
+xxx
+xxx
+xxx
+xgx
+gus
+xsx
 """
 
 layout_2way_test_giuk ="""

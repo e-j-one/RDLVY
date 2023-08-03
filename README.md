@@ -181,6 +181,28 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
 - GOALS: represents requested goals
 - ACCESSIBLE: 0 if cell is occupied by other agent
 
+- Env 생성 시 observation_type=ObsevationType.IMAGE, use_full_obs=True option으로 전체 obs에 접근 가능
+- image_observation_layers=[
+
+    ImageLayer.SHELVES,
+
+    ImageLayer.REQUESTS,
+
+    ImageLayer.AGENTS,
+
+    ImageLayer.AGENT_DIRECTION,
+
+    ImageLayer.AGENT_LOAD,
+
+    ImageLayer.GOALS,
+
+    ImageLayer.ACCESSIBLE
+
+  ]
+
+  로 원하는 layer 중 선택 가능
+
+
 ### [WIP] Dictionary observations description
 obs["self"]
 - location
@@ -194,6 +216,16 @@ obs["sensors"][i]
 - local_message
 - has_shelf -> represents shelf(=obstacle)
 - shelf_requested -> represents if there is 'package' requested
+- goal_requested -> represents if there is 'goal' requested
+
+
+## Reward
+- Env 생성 시 reward_type= 파라미터로 조절 가능
+- RewardType.GLOBAL: delivery 완료 시 모든 agent가 +1의 reward를 받음
+- RewardType.INDIVIDUAL: delivery 완료 시 해당 agent만 +1의 reward를 받음
+- RewardType.TWO_STAGE: 해당 agent만 package를 load할 때 +0.5, deliver를 완료할 때 +0.5의 reward를 받음
+
+
 
 ---
 # RWARE
@@ -393,4 +425,3 @@ If you use this environment, consider citing
 }
 
 ```
-
