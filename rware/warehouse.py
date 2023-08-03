@@ -529,9 +529,9 @@ class Warehouse(gym.Env):
                                                         self.msg_bits
                                                     ),
                                                     "has_shelf": spaces.MultiBinary(1), # Leave it as location of shelf # TODO: change name
-                                                    "shelf_requested": spaces.MultiBinary(
-                                                        1
-                                                    ), # Now works as package_packages # TODO: change name
+                                                    # "shelf_requested": spaces.MultiBinary(1), # Now works as package_packages # TODO: change name
+                                                    "shelf_requested": spaces.Discrete(1), # Now works as package_packages # TODO: change name
+                                                    "goal_requested": spaces.Discrete(4),
                                                 }
                                             )
                                         ),
@@ -1176,6 +1176,9 @@ class Warehouse(gym.Env):
                 # if agent is in start position with requested package, load package
                 loaded_package = self._load_package_from_stat_pose(agent.x, agent.y)
                 agent.container.load(loaded_package)
+                if self.reward_type == RewardType.TWO_STAGE:
+                    rewards[agent.id -1] += 0.5
+                
             # deprecate shelf returning            
             # elif agent.req_action == Action.TOGGLE_LOAD and agent.carrying_shelf:
             #     if not self._is_highway(agent.x, agent.y):
@@ -1279,19 +1282,21 @@ if __name__ == "__main__":
     # from layout import layout_301
     # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
     from layout import layout_smallstreet, layout_2way, layout_2way_simple, layout_2way_test_giuk
-    env = Warehouse(9, 8, 3, 30, 3, 10, 10, None, None, RewardType.GLOBAL, layout=layout_2way, block_size="small")
+    # env = Warehouse(9, 8, 3, 30, 0, 10, 10, None, None, RewardType.GLOBAL, layout=layout_2way, block_size="small")
     # env = Warehouse(9, 8, 3, 4, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple, block_size="big")
+    env = Warehouse(9, 8, 3, 4, 3, 3, 3, None, None, RewardType.TWO_STAGE, layout=layout_2way_simple, block_size="big")
     # # env = Warehouse(9, 8, 3, 10, 3, 3, 10, None, None, RewardType.GLOBAL, layout=layout_2way_test_gi, block_size="big")
     env.reset()
     import time
     from tqdm import tqdm
 
-    env.render()
-    time.sleep(2)
     # env.step(18 * [Action.LOAD] + 2 * [Action.NOOP])
 
     for _ in tqdm(range(1000000)):
         # time.sleep(2)
         env.render()
         actions = env.action_space.sample()
-        env.step(actions)
+        next_obs, reward, dones, info = env.step(actions)
+        for r in reward:
+            if r:
+                print(reward)
