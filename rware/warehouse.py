@@ -208,9 +208,6 @@ class Warehouse(gym.Env):
 
     def __init__(
         self,
-        shelf_columns: int,
-        column_height: int,
-        shelf_rows: int,
         n_agents: int,
         msg_bits: int,
         sensor_range: int,
@@ -220,6 +217,7 @@ class Warehouse(gym.Env):
         reward_type: RewardType,
         layout: str = None,
         observation_type: ObserationType=ObserationType.FLATTENED,
+        use_full_obs:bool = False,
         image_observation_layers: List[ImageLayer]=[
             ImageLayer.SHELVES,
             ImageLayer.REQUESTS,
@@ -230,7 +228,10 @@ class Warehouse(gym.Env):
         image_observation_directional: bool=True,
         normalised_coordinates: bool=False,
         package_carrying_capacity_per_agent: int = 3,
-        block_size="small"
+        block_size="small",
+        shelf_columns: int = 0,
+        column_height: int = 0,
+        shelf_rows: int = 0,
     ):
         """The robotic warehouse environment
 
@@ -342,6 +343,7 @@ class Warehouse(gym.Env):
         self.agents: List[Agent] = []
 
         # default values:
+        self.use_full_obs = use_full_obs
         self.fast_obs = None
         self.image_obs = None
         self.observation_space = None
@@ -572,8 +574,10 @@ class Warehouse(gym.Env):
             # write image observations
             if agent.id == 1:
                 layers = []
+                org_layers = []
                 # first agent's observation --> update global observation layers
                 for layer_type in self.image_observation_layers:
+                    print(layer_type)
                     if layer_type == ImageLayer.SHELVES:
                         layer = self.grid[_LAYER_SHELFS].copy().astype(np.float32)
                         # set all occupied shelf cells to 1.0 (instead of shelf ID)
@@ -613,16 +617,24 @@ class Warehouse(gym.Env):
                             layer[goal_x, goal_y] = 1.0
                         # print("GOALS LAYER")
                     elif layer_type == ImageLayer.ACCESSIBLE:
-                        layer = np.ones(self.grid_size, dtype=np.float32)
-                        for ag in self.agents:
-                            layer[ag.y, ag.x] = 0.0 # TODO: change accessiblity as road become two-way
+                        if self.use_full_obs:
+                            layer = (1. - self.grid[_LAYER_SHELFS].copy().astype(np.float32) > 0)
+                        else:
+                            layer = np.ones(self.grid_size, dtype=np.float32)
+                            for ag in self.agents:
+                                layer[ag.y, ag.x] = 0.0 # TODO: change accessiblity as road become two-way
                         # print("ACCESSIBLE LAYER")
                     # print(layer)
                     # print()
                     # pad with 0s for out-of-map cells
+                    org_layer = layer
+                    org_layers.append(org_layer)
                     layer = np.pad(layer, self.sensor_range, mode="constant")
                     layers.append(layer)
                 self.global_layers = np.stack(layers)
+                self.org_global_layers = np.stack(org_layers)
+                if self.use_full_obs:
+                    return self.org_global_layers
 
             # global information was generated --> get information for agent
             start_x = agent.y
@@ -1279,18 +1291,28 @@ class Warehouse(gym.Env):
     
 
 if __name__ == "__main__":
-    # from layout import layout_301
-    # env = Warehouse(9, 8, 3, 1, 3, 1, 3, None, None, RewardType.GLOBAL, layout=layout_301)
     from layout import layout_smallstreet, layout_2way, layout_2way_simple, layout_2way_test_giuk
     # env = Warehouse(9, 8, 3, 30, 0, 10, 10, None, None, RewardType.GLOBAL, layout=layout_2way, block_size="small")
-    # env = Warehouse(9, 8, 3, 4, 3, 3, 3, None, None, RewardType.GLOBAL, layout=layout_2way_simple, block_size="big")
-    env = Warehouse(9, 8, 3, 4, 3, 3, 3, None, None, RewardType.TWO_STAGE, layout=layout_2way_simple, block_size="big")
+    # env = Warehouse(9, 8, 3, 4, 0, 3, 3, None, None, RewardType.TWO_STAGE, layout=layout_2way_simple, block_size="big")
+    env = Warehouse(n_agents=4,
+                    msg_bits=0,
+                    sensor_range=3,
+                    request_queue_size=5,
+                    max_inactivity_steps=10000,
+                    max_steps=10000,
+                    reward_type=RewardType.TWO_STAGE,
+                    layout=layout_2way_simple,
+                    block_size="big",
+                    observation_type=ObserationType.IMAGE,
+                    use_full_obs=True
+                    )
     # # env = Warehouse(9, 8, 3, 10, 3, 3, 10, None, None, RewardType.GLOBAL, layout=layout_2way_test_gi, block_size="big")
-    env.reset()
     import time
     from tqdm import tqdm
 
     # env.step(18 * [Action.LOAD] + 2 * [Action.NOOP])
+    state = env.reset()
+    time.sleep(1000)
 
     for _ in tqdm(range(1000000)):
         # time.sleep(2)

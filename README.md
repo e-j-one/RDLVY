@@ -139,8 +139,8 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
 - Layout에서 'g'는 상당히 많아도 됨. 길을 따라 모든 곳에 생성 가능.
 
 
-## Observation우
-TODO서
+## Observation
+TODO
 
 
 <p align="center">
