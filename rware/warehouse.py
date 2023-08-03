@@ -227,10 +227,10 @@ class Warehouse(gym.Env):
             ImageLayer.GOALS,
             ImageLayer.ACCESSIBLE
         ],
-        image_observation_directional: bool=True,
-        normalised_coordinates: bool=False,
+        image_observation_directional: bool = True,
+        normalised_coordinates: bool = False,
         package_carrying_capacity_per_agent: int = 3,
-        block_size="small",
+        block_size: str = "small",
     ):
         """The robotic warehouse environment
 
