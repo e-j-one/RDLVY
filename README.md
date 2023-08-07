@@ -182,23 +182,16 @@ Layout의 변경을 원하는 경우 아래의 규칙을 따라 작성해야만 
 - ACCESSIBLE: 0 if cell is occupied by other agent
 
 - Env 생성 시 observation_type=ObsevationType.IMAGE, use_full_obs=True option으로 전체 obs에 접근 가능
-- image_observation_layers=[
-
-    ImageLayer.SHELVES,
-
-    ImageLayer.REQUESTS,
-
-    ImageLayer.AGENTS,
-
-    ImageLayer.AGENT_DIRECTION,
-
-    ImageLayer.AGENT_LOAD,
-
-    ImageLayer.GOALS,
-
-    ImageLayer.ACCESSIBLE
-
-  ]
+    
+      image_observation_layers=[
+        ImageLayer.SHELVES,
+        ImageLayer.REQUESTS,
+        ImageLayer.AGENTS,
+        ImageLayer.AGENT_DIRECTION,
+        ImageLayer.AGENT_LOAD,
+        ImageLayer.GOALS,
+        ImageLayer.ACCESSIBLE
+      ]
 
   로 원하는 layer 중 선택 가능
 
