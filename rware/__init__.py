@@ -1,5 +1,5 @@
 import gym
-from .warehouse import Warehouse, RewardType, Action, ObserationType
+from .warehouse import Warehouse, RewardType, Action, ObservationType
 import itertools
 
 _sizes = {

@@ -67,7 +67,7 @@ class RewardType(Enum):
     TWO_STAGE = 2
 
 
-class ObserationType(Enum):
+class ObservationType(Enum):
     DICT = 0
     FLATTENED = 1
     IMAGE = 2
@@ -216,7 +216,7 @@ class Warehouse(gym.Env):
         max_steps: Optional[int],
         reward_type: RewardType,
         layout: str = None,
-        observation_type: ObserationType=ObserationType.FLATTENED,
+        observation_type: ObservationType=ObservationType.FLATTENED,
         use_full_obs:bool = False,
         image_observation_layers: List[ImageLayer]=[
             ImageLayer.SHELVES,
@@ -313,7 +313,7 @@ class Warehouse(gym.Env):
         self.fast_obs = None
         self.image_obs = None
         self.observation_space = None
-        if observation_type == ObserationType.IMAGE:
+        if observation_type == ObservationType.IMAGE:
             self._use_image_obs(image_observation_layers, image_observation_directional)
         else:
             # used for DICT observation type and needed as preceeding stype to generate
@@ -322,7 +322,7 @@ class Warehouse(gym.Env):
 
         # for performance reasons we
         # can flatten the obs vector
-        if observation_type == ObserationType.FLATTENED:
+        if observation_type == ObservationType.FLATTENED:
             self._use_fast_obs()
 
         self.renderer = None
@@ -1279,7 +1279,7 @@ if __name__ == "__main__":
     #                reward_type=RewardType.TWO_STAGE,
     #                layout=layout_2way_simple,
     #                block_size="big",
-    #                observation_type=ObserationType.IMAGE,
+    #                observation_type=ObservationType.IMAGE,
     #                use_full_obs=True
     #                )
     env = Warehouse(n_agents=30,
@@ -1291,7 +1291,7 @@ if __name__ == "__main__":
                     reward_type=RewardType.TWO_STAGE,
                     layout=layout_2way,
                     block_size="small",
-                    observation_type=ObserationType.IMAGE,
+                    observation_type=ObservationType.IMAGE,
                     use_full_obs=True
                     )
     import time
