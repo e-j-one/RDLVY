@@ -1,7 +1,7 @@
 # RDLVY
 [![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
 
-We modified the robotic-warehouse environment [RWARE](https://github.com/semitable/robotic-warehouse)[1] to create a gird based robotic-delivery environment.
+We modified the robotic-warehouse environment [RWARE](https://github.com/semitable/robotic-warehouse)[1] to create a gird-based robotic-delivery environment.
 
 Below is a rendering of 4 agents with random policy in small (9x14) RDLVY envrionment.
 
@@ -37,10 +37,6 @@ cd RDLVY
 export PYTHONPATH=$PYTHONPATH:.
 python rware/warehouse.py
 ```
-
-## WorkFlow
-Git Workflow: Fork & Pull Request
-Formatter: Use black
 
 ## Env Description
 시작 지점 (물류창고) & package
