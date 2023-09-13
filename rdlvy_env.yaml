@@ -1,4 +1,4 @@
-name: wdtest9
+name: rdlvy
 channels:
   - conda-forge
   - defaults

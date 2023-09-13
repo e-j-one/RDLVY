@@ -1,10 +1,10 @@
-# 목적
+# Objectives
 
 
-# 변경사항
+# Changes
 
 
-# 인수조건
+# Checklist
 
 
 # TODO (optional)
