@@ -11,7 +11,7 @@ from tqdm import tqdm
 #                reward_type=RewardType.TWO_STAGE,
 #                layout=layout_2way_simple,
 #                block_size="big",
-#                observation_type=ObserationType.IMAGE,
+#                observation_type=ObservationType.IMAGE,
 #                use_full_obs=True
 #                )
 env = RobotDelivery(n_agents=30,
@@ -23,7 +23,7 @@ env = RobotDelivery(n_agents=30,
                 reward_type=RewardType.TWO_STAGE,
                 layout=layout_2way,
                 block_size="small",
-                observation_type=ObserationType.IMAGE,
+                observation_type=ObservationType.IMAGE,
                 use_full_obs=True
                 )
 
