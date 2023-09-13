@@ -1,4 +1,4 @@
-name: wdtest9
+name: rdlvy
 channels:
   - conda-forge
   - defaults
@@ -50,5 +50,5 @@ dependencies:
   - zlib=1.2.13=h5eee18b_0
   - pip:
       - networkx==3.1
-      - pyglet==2.0.8
+      - pyglet==1.5.7
 prefix: /home/jwl/anaconda3/envs/wdtest9

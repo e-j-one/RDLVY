@@ -4,8 +4,8 @@ from collections import defaultdict, OrderedDict
 import gym
 from gym import spaces
 
-from rware.utils import MultiAgentActionSpace, MultiAgentObservationSpace
-from rware.utils.rdlvy_utils import select_highway_positions
+from rdlvy.utils import MultiAgentActionSpace, MultiAgentObservationSpace
+from rdlvy.utils.rdlvy_utils import select_highway_positions
 
 from enum import Enum
 import numpy as np
@@ -202,7 +202,7 @@ class Shelf(Entity):
     def collision_layers(self):
         return (_LAYER_SHELFS,)
 
-class Warehouse(gym.Env):
+class RobotDelivery(gym.Env):
 
     metadata = {"render.modes": ["human", "rgb_array"]}
 
@@ -232,39 +232,6 @@ class Warehouse(gym.Env):
         package_carrying_capacity_per_agent: int = 3,
         block_size: str = "small",
     ):
-        """The robotic warehouse environment
-
-        Creates a grid world where multiple agents (robots)
-        are supposed to collect shelfs, bring them to a goal
-        and then return them.
-        :param n_agents: Number of spawned and controlled agents
-        :type n_agents: int
-        :param msg_bits: Number of communication bits for each agent
-        :type msg_bits: int
-        :param sensor_range: Range of each agents observation
-        :type sensor_range: int
-        :param request_queue_size: How many shelfs->Packages are simultaneously requested
-        :type request_queue_size: int
-        :param max_inactivity: Number of steps without a delivered shelf until environment finishes
-        :type max_inactivity: Optional[int]
-        :param reward_type: Specifies if agents are rewarded individually or globally
-        :type reward_type: RewardType
-        :param layout: A string for a custom warehouse layout. X are shelve locations, dots are corridors, and g are the goal locations. Ignores shelf_columns, shelf_height and shelf_rows when used.
-        :type layout: str
-        :param observation_type: Specifies type of observations
-        :param image_observation_layers: Specifies types of layers observed if image-observations
-            are used
-        :type image_observation_layers: List[ImageLayer]
-        :param image_observation_directional: Specifies whether image observations should be
-            rotated to be directional (agent perspective) if image-observations are used
-        :type image_observation_directional: bool
-        :param normalised_coordinates: Specifies whether absolute coordinates should be normalised
-            with respect to total warehouse size
-        :type normalised_coordinates: bool
-        """
-
-        # self.goals: List[Tuple[int, int]] = []
-
         # requested_goals are as same size as request_queue_size
         # as package is delivered to the goal, it disappears and new goal appears
         # goal is randomly generated among goal_candidates and can not overlap
@@ -803,8 +770,6 @@ class Warehouse(gym.Env):
         Agent.counter = 0
         self._cur_inactive_steps = 0
         self._cur_steps = 0
-        # n_xshelf = (self.grid_size[1] - 1) // 3
-        # n_yshelf = (self.grid_size[0] - 2) // 9
 
         # make the shelfs
         self.shelfs = [
@@ -815,10 +780,6 @@ class Warehouse(gym.Env):
             )
             if self.highways_info[y, x] == HighwayDirection.NULL
         ]
-
-        # self.request_queue = list(
-        #     np.random.choice(self.shelfs, size=self.request_queue_size, replace=False)
-        # )
         self.request_queue = self._create_packages()
         self.requested_goals = random.sample(self.goal_candidates, self.requested_goal_size)
         _unselected_goals = [goal for goal in self.goal_candidates if goal not in self.requested_goals]
@@ -826,12 +787,6 @@ class Warehouse(gym.Env):
             self.highways[_u_goals[1], _u_goals[0]] = 0
 
         # spawn agents at random locations
-        # agent_locs = np.random.choice(
-        #     np.arange(self.grid_size[0] * self.grid_size[1]),
-        #     size=self.n_agents,
-        #     replace=False,
-        # )
-        # agent_locs = np.unravel_index(agent_locs, self.grid_size)
         agent_locs = select_highway_positions(self.highways, self.n_agents)
         
         # and direction
@@ -851,10 +806,6 @@ class Warehouse(gym.Env):
             return self._make_obs(self.agents[0])
         else:
             return tuple([self._make_obs(agent) for agent in self.agents])
-        # for s in self.shelfs:
-        #     self.grid[0, s.y, s.x] = 1
-        # print(self.grid[0])
-
     def _is_start_pose_with_package(self, x, y):
         if self.requested_package_grid[y,x] > 0:
             return True
@@ -1072,23 +1023,6 @@ class Warehouse(gym.Env):
             start = agent.x, agent.y
             target = agent.req_location(self.grid_size)
 
-            # shelf is deprecated
-            # if (
-            #     agent.carrying_shelf
-            #     and start != target
-            #     and self.grid[_LAYER_SHELFS, target[1], target[0]]
-            #     and not (
-            #         self.grid[_LAYER_AGENTS, target[1], target[0]]
-            #         and self.agents[
-            #             self.grid[_LAYER_AGENTS, target[1], target[0]] - 1
-            #         ].carrying_shelf
-            #     )
-            # ):
-            #     # there's a standing shelf at the target location
-            #     # our agent is carrying a shelf so there's no way
-            #     # this movement can succeed. Cancel it.
-            #     agent.req_action = Action.NOOP
-            #     G.add_edge(start, start)
             if (
                 # check if target position is possible to go when action==Forward:
                 agent.req_action == Action.FORWARD
@@ -1145,17 +1079,11 @@ class Warehouse(gym.Env):
             agent.prev_x, agent.prev_y = agent.x, agent.y
 
             if agent.req_action == Action.FORWARD:
-                agent.x, agent.y = agent.req_location(self.grid_size) # TODO: move agent by method 
-                # if agent.carrying_shelf:
-                #     agent.carrying_shelf.x, agent.carrying_shelf.y = agent.x, agent.y
+                agent.x, agent.y = agent.req_location(self.grid_size)
                 if agent.carrying_package():
                     agent.move_container() # This method could be inside agent's 'move' method 
             elif agent.req_action in [Action.LEFT, Action.RIGHT]:
                 agent.dir = agent.req_direction()
-            # elif agent.req_action == Action.TOGGLE_LOAD and not agent.carrying_shelf:
-            #     shelf_id = self.grid[_LAYER_SHELFS, agent.y, agent.x]
-            #     if shelf_id:
-            #         agent.carrying_shelf = self.shelfs[shelf_id - 1]
             elif (
                 agent.req_action == Action.TOGGLE_LOAD and
                 agent.container.count_packages() < self.package_carrying_capacity_per_agent and
@@ -1167,27 +1095,12 @@ class Warehouse(gym.Env):
                 agent.container.load(loaded_package)
                 if self.reward_type == RewardType.TWO_STAGE:
                     rewards[agent.id -1] += 0.5
-                
-            # deprecate shelf returning            
-            # elif agent.req_action == Action.TOGGLE_LOAD and agent.carrying_shelf:
-            #     if not self._is_highway(agent.x, agent.y):
-            #         agent.carrying_shelf = None
-            #         if agent.has_delivered and self.reward_type == RewardType.TWO_STAGE:
-            #             rewards[agent.id - 1] += 0.5
-            #         agent.has_delivered = False
-
 
         self._recalc_grid()
 
-        # shelf_delivered = False
         package_delivered = False
         # for y, x in self.goals:
         for y, x in self.requested_goals:
-            # shelf_id = self.grid[_LAYER_SHELFS, x, y]
-            # if not shelf_id:
-            #     continue
-            # shelf = self.shelfs[shelf_id - 1]
-
             # TODO: maybe change gridmap[_LAYER_AGENT] to incorporate multiple agent at same sell
             # NOTE: assume grid[_LAYER_AGENTS] represents one of agent id at the same cell
             # only one agent can occupy goal_pose
@@ -1196,21 +1109,10 @@ class Warehouse(gym.Env):
                 continue
             agent = self.agents[agent_id -1]
 
-
-            # if shelf not in self.request_queue:
-            #     continue
-            # a shelf was successfully delived.
-            # shelf_delivered = True
             if not agent.carrying_package():
                 continue
             # a package was successfully delilved.
             package_delivered = True
-
-            # remove from queue and replace it
-            # new_request = np.random.choice(
-            #     list(set(self.shelfs) - set(self.request_queue))
-            # )
-            # self.request_queue[self.request_queue.index(shelf)] = new_request
 
             # package is removed from request_queue when it was loaded from the start
             # unload package from container inside agent
@@ -1255,7 +1157,7 @@ class Warehouse(gym.Env):
 
     def render(self, mode="human"):
         if not self.renderer:
-            from rware.rendering import Viewer
+            from rdlvy.rendering import Viewer
 
             self.renderer = Viewer(self.grid_size, self.block_size)
         return self.renderer.render(self, return_rgb_array=mode == "rgb_array")
@@ -1270,7 +1172,7 @@ class Warehouse(gym.Env):
 
 if __name__ == "__main__":
     from layout import layout_smallstreet, layout_2way, layout_2way_simple, layout_2way_obs_test
-    #env = Warehouse(n_agents=4,
+    #env = RobotDelivery(n_agents=4,
     #                msg_bits=0,
     #                sensor_range=3,
     #                request_queue_size=5,
@@ -1282,7 +1184,7 @@ if __name__ == "__main__":
     #                observation_type=ObserationType.IMAGE,
     #                use_full_obs=True
     #                )
-    env = Warehouse(n_agents=30,
+    env = RobotDelivery(n_agents=30,
                     msg_bits=0,
                     sensor_range=10,
                     request_queue_size=20,
