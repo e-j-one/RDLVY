@@ -15,9 +15,13 @@ Our research will be done on a map modeled after Sangam-dong, Seoul, Repulic of 
  <img width="600px" src="rdlvy_docs/Sangam-dong.png" align="center" alt="RDLVY illustration" />
 </p>
 
+## NOTE!!
+**This environment is not under maintenance for now, as we are currently developing a new graph-based multi-robot delivery environment!**
+
 <h1>Table of Contents</h1>
 
 - [RDLVY](#rdlvy)
+  - [NOTE!!](#note)
   - [Getting started](#getting-started)
   - [Environment Description](#environment-description)
     - [Warehouses (Start)](#warehouses-start)
@@ -78,7 +82,7 @@ Please refer to the following rules to modify the layout of the map.
 2. 'x' represents obstacles.
 3. 'r', 'l', 'u', 'd' represent highways.
 - Four-way and three-way junctions
-    - Constructed them !!without!! intersection layout denoted by '.'.
+    - Constructed them **without** intersection layout denoted by '.'.
 
           4-way junction example
           ...
