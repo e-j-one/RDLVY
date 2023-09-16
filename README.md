@@ -1,6 +1,8 @@
 # RDLVY
 [![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
 
+***NOTE: This environment is not under maintenance for now, as we are currently developing a new graph-based multi-robot delivery environment!***
+
 We modified the robotic-warehouse environment [RWARE](https://github.com/semitable/robotic-warehouse)[1] to create a gird-based robotic-delivery environment.
 
 Below is a rendering of 4 agents with random policy in small (9x14) RDLVY envrionment.
@@ -15,13 +17,10 @@ Our research will be done on a map modeled after Sangam-dong, Seoul, Repulic of 
  <img width="600px" src="rdlvy_docs/Sangam-dong.png" align="center" alt="RDLVY illustration" />
 </p>
 
-## NOTE!!
-**This environment is not under maintenance for now, as we are currently developing a new graph-based multi-robot delivery environment!**
 
 <h1>Table of Contents</h1>
 
 - [RDLVY](#rdlvy)
-  - [NOTE!!](#note)
   - [Getting started](#getting-started)
   - [Environment Description](#environment-description)
     - [Warehouses (Start)](#warehouses-start)
@@ -34,7 +33,8 @@ Our research will be done on a map modeled after Sangam-dong, Seoul, Repulic of 
     - [Image observations description](#image-observations-description)
     - [\[WIP\] Dictionary observations description](#wip-dictionary-observations-description)
   - [Reward](#reward)
-- [Reference](#reference)
+  - [Authors](#authors)
+  - [Reference](#reference)
 
 
 ## Getting started
@@ -188,6 +188,10 @@ obs["sensors"][i]
 - RewardType.INDIVIDUAL: Agent is awarded +1 reward when it delivery the packages.
 - RewardType.TWO_STAGE: Agent is awarded +0.5 reward when it loads the packages and +0.5 when it deliver the package to the destination.
 
-# Reference
+## Authors
+[Jaewon Lee](https://github.com/e-j-one) and [Junseok Kim](https://github.com/1kjs) from [Robot Learning Laboratory](https://rllab.snu.ac.kr/)
+
+## Reference
 [1] https://github.com/semitable/robotic-warehouse
+
 [2] Filippos, C., Schäfer, L., & Albrecht, S. (2020). Shared Experience Actor-Critic for Multi-Agent Reinforcement Learning [Conference paper]. 33, 10707–10717. https://arxiv.org/abs/2006.07169
