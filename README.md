@@ -34,7 +34,8 @@ Our research will be done on a map modeled after Sangam-dong, Seoul, Repulic of 
     - [Image observations description](#image-observations-description)
     - [\[WIP\] Dictionary observations description](#wip-dictionary-observations-description)
   - [Reward](#reward)
-- [Reference](#reference)
+  - [Authors](#authors)
+  - [Reference](#reference)
 
 
 ## Getting started
@@ -188,6 +189,10 @@ obs["sensors"][i]
 - RewardType.INDIVIDUAL: Agent is awarded +1 reward when it delivery the packages.
 - RewardType.TWO_STAGE: Agent is awarded +0.5 reward when it loads the packages and +0.5 when it deliver the package to the destination.
 
-# Reference
+## Authors
+[Jaewon Lee](https://github.com/e-j-one) and [Junseok Kim](https://github.com/1kjs) from [Robot Learning Laboratory](https://rllab.snu.ac.kr/)
+
+## Reference
 [1] https://github.com/semitable/robotic-warehouse
+
 [2] Filippos, C., Schäfer, L., & Albrecht, S. (2020). Shared Experience Actor-Critic for Multi-Agent Reinforcement Learning [Conference paper]. 33, 10707–10717. https://arxiv.org/abs/2006.07169
