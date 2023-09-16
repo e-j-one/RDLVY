@@ -143,7 +143,6 @@ class Agent(Entity):
         self.dir = dir_
         self.message = np.zeros(msg_bits)
         self.req_action: Optional[Action] = None
-        # self.carrying_shelf: Optional[Shelf] = None
         self.canceled_action = None
         self.has_delivered = False
 
@@ -241,7 +240,6 @@ class RobotDelivery(gym.Env):
 
         self.start_candidates: List[Tuple[int, int]] = []
         self.requested_starts: List[Tuple[int, int]] = []
-        # self.starts_with_package_grid = np.zeros(self.grid_size, dtype=np.int32)
 
         if not layout:
             NotImplementedError("layout should be given")
@@ -514,43 +512,30 @@ class RobotDelivery(gym.Env):
                         layer = self.grid[_LAYER_SHELFS].copy().astype(np.float32)
                         # set all occupied shelf cells to 1.0 (instead of shelf ID)
                         layer[layer > 0.0] = 1.0
-                        # print("SHELVES LAYER")
                     elif layer_type == ImageLayer.REQUESTS:
                         layer = np.zeros(self.grid_size, dtype=np.float32)
-                        # for requested_shelf in self.request_queue:
-                            # layer[requested_shelf.y, requested_shelf.x] = 1.0
                         for package in self.request_queue:
                             layer[package.y, package.x] = 1.0
-                        # print("REQUESTS LAYER")
                     elif layer_type == ImageLayer.AGENTS:
                         layer = self.grid[_LAYER_AGENTS].copy().astype(np.float32)
                         # set all occupied agent cells to 1.0 (instead of agent ID)
                         layer[layer > 0.0] = 1.0
-                        # print("AGENTS LAYER")
                     elif layer_type == ImageLayer.AGENT_DIRECTION:
                         layer = np.zeros(self.grid_size, dtype=np.float32)
                         for ag in self.agents:
                             agent_direction = ag.dir.value + 1
                             layer[ag.y, ag.x] = float(agent_direction)
-                        # print("AGENT DIRECTIONS LAYER")
                     elif layer_type == ImageLayer.AGENT_LOAD:
                         layer = np.zeros(self.grid_size, dtype=np.float32)
                         for ag in self.agents:
-                            # if ag.carrying_shelf is not None:
-                            #     layer[ag.x, ag.y] = 1.0
                             if ag.carrying_package() is not None:
                                 layer[ag.y, ag.x] = 1.0
-                        # print("AGENT LOAD LAYER")
                     elif layer_type == ImageLayer.GOALS:
                         layer = np.zeros(self.grid_size, dtype=np.float32)
-                        # for goal_y, goal_x in self.goals:
-                        #     layer[goal_x, goal_y] = 1.0
                         for goal_y, goal_x in self.requested_goals:
                             layer[goal_x, goal_y] = 1.0
-                        # print("GOALS LAYER")
                     elif layer_type == ImageLayer.ACCESSIBLE:
                         layer = (1. - self.grid[_LAYER_SHELFS].copy().astype(np.float32) > 0)
-                        # layer = np.ones(self.grid_size, dtype=np.float32)
                         for ag in self.agents:
                             layer[ag.y, ag.x] = 0.0 # TODO: change accessiblity as road become two-way
 
@@ -638,7 +623,6 @@ class RobotDelivery(gym.Env):
                 agent_x = agent.x
                 agent_y = agent.y
 
-            # obs.write([agent_x, agent_y, int(agent.carrying_shelf is not None)])
             obs.write([agent_x, agent_y, int(agent.carrying_package() is not None)])
             direction = np.zeros(4)
             direction[agent.dir.value] = 1.0
@@ -661,7 +645,6 @@ class RobotDelivery(gym.Env):
                     obs.skip(1)
                 else:
                     obs.write(
-                        # [1.0, int(self.shelfs[id_shelf - 1] in self.request_queue)]
                         [1.0]
                     )
                 if num_requested_packages == 0:
@@ -684,7 +667,6 @@ class RobotDelivery(gym.Env):
         # --- self data
         obs["self"] = {
             "location": np.array([agent_x, agent_y]),
-            # "carrying_shelf": [int(agent.carrying_shelf is not None)],
             "carrying_package": [int(agent.carrying_package() is not None)], 
             "direction": agent.dir.value,
             "on_highway": [int(self._is_highway(agent.x, agent.y))],
@@ -707,12 +689,8 @@ class RobotDelivery(gym.Env):
         for i, id_ in enumerate(shelfs):
             if id_ == 0:
                 obs["sensors"][i]["has_shelf"] = [0]
-                # obs["sensors"][i]["shelf_requested"] = [0]
             else:
                 obs["sensors"][i]["has_shelf"] = [1]
-                # obs["sensors"][i]["shelf_requested"] = [
-                #     int(self.shelfs[id_ - 1] in self.request_queue)
-                # ]
 
         # find neighboring start position with requested packages
         for i, num_ in enumerate(requested_packages):
